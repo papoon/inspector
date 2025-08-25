@@ -9,7 +9,7 @@ use Illuminate\Container\Container;
 
 class InspectorTest extends TestCase
 {
-    public function testInspectServiceReturnsArrayWithKeys()
+    public function testInspectServiceReturnsArrayWithKeys(): void
     {
         $container = new Container();
         $adapter = new LaravelAdapter($container);
@@ -22,7 +22,7 @@ class InspectorTest extends TestCase
         $this->assertArrayHasKey('resolved', $result);
     }
 
-    public function testLaravelAdapterImplementsInterface()
+    public function testLaravelAdapterImplementsInterface(): void
     {
         $container = new Container();
         $adapter = new LaravelAdapter($container);
@@ -30,7 +30,7 @@ class InspectorTest extends TestCase
         $this->assertInstanceOf(\Inspector\AdapterInterface::class, $adapter);
     }
 
-    public function testInspectorConstructorSetsAdapter()
+    public function testInspectorConstructorSetsAdapter(): void
     {
         $container = new Container();
         $adapter = new LaravelAdapter($container);
@@ -43,12 +43,31 @@ class InspectorTest extends TestCase
         $this->assertSame($adapter, $property->getValue($inspector));
     }
 
-    public function testBrowseServicesReturnsArray()
+    public function testBrowseServicesReturnsArray(): void
     {
         $container = new Container();
         $adapter = new LaravelAdapter($container);
         $inspector = new Inspector($adapter);
 
         $this->assertIsArray($inspector->browseServices());
+    }
+
+    public function testInspectorDetectsRegisteredServices(): void
+    {
+        $container = new Container();
+
+        // Register some services
+        $container->bind('foo', fn () => 'bar');
+        $container->bind('baz', fn () => 'qux');
+
+        $adapter = new LaravelAdapter($container);
+        $inspector = new Inspector($adapter);
+
+        $services = $inspector->browseServices();
+
+        // Assert that registered services are detected
+        $this->assertContains('foo', $services);
+        $this->assertContains('baz', $services);
+        $this->assertCount(2, $services);
     }
 }
