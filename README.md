@@ -98,6 +98,57 @@ php artisan services:trace <service>
 
 ---
 
+## Container Configuration
+
+This package supports Laravel, Symfony, and any PSR-11 compatible container.
+
+### Laravel
+
+No configuration needed if used inside a Laravel app. The inspector will use the real Laravel container via `app()`.
+
+### Symfony
+
+No configuration needed if used inside a Symfony app. The inspector will use the real Symfony container via `$GLOBALS['kernel']->getContainer()`.
+
+### PSR-11
+
+To use a PSR-11 compatible container, create a config file at `config/container.php`:
+
+```php
+<?php
+
+return [
+    'psr' => [
+        'class' => \Your\Psr\Container::class, // Fully qualified class name
+        'args' => [
+            // Constructor arguments for your container, if any
+        ],
+    ],
+];
+```
+
+Then select "PSR-11" in the dashboard or pass `adapter=psr` as a query parameter:
+
+```
+http://localhost:8080/?adapter=psr
+```
+
+If your container requires additional setup, do it in the config file or modify `public/index.php` as needed.
+
+---
+
+### Custom Container Configuration
+
+You can place your `config/container.php` in your project root or use the default provided by this package.  
+The inspector will automatically use your custom config if present.
+
+Example location:
+```
+your-project/config/container.php
+```
+
+---
+
 ## Testing
 
 Run PHPUnit tests:

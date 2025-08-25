@@ -54,9 +54,8 @@ class CircularDependencyCommand extends Command
                 $output->writeln($cycle);
             }
             return Command::FAILURE;
-        } else {
-            $output->writeln('<info>No circular dependencies detected.</info>');
-            return Command::SUCCESS;
         }
+        $output->writeln('<info>No circular dependencies detected.</info>');
+        return Command::SUCCESS;
     }
 }
