@@ -43,7 +43,8 @@ class LaravelAdapterTest extends TestCase
         $bindings = $adapter->getBindings();
 
         $this->assertArrayHasKey('foo', $bindings);
-        $this->assertIsArray($bindings['foo']);
+        $this->assertArrayHasKey('concrete', $bindings['foo']);
+        $this->assertArrayHasKey('shared', $bindings['foo']);
     }
 
     public function testGetDependenciesReturnsEmptyArray(): void
@@ -52,7 +53,6 @@ class LaravelAdapterTest extends TestCase
         $adapter = new LaravelAdapter($container);
 
         $dependencies = $adapter->getDependencies('foo');
-        $this->assertIsArray($dependencies);
         $this->assertEmpty($dependencies);
     }
 
@@ -62,7 +62,6 @@ class LaravelAdapterTest extends TestCase
         $adapter = new LaravelAdapter($container);
 
         $history = $adapter->getBindingHistory('foo');
-        $this->assertIsArray($history);
         $this->assertEmpty($history);
     }
 

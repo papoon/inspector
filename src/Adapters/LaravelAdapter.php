@@ -37,7 +37,7 @@ class LaravelAdapter implements AdapterInterface
         return [];
     }
 
-    /** @return array<string, string> */
+    /** @return array<string, array{concrete: mixed, shared: bool}> */
     public function getBindings(): array
     {
         return $this->container->getBindings();

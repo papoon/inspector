@@ -10,11 +10,21 @@ class Inspector
         $this->adapter = $adapter;
     }
 
+    /**
+     * @return array<string>
+     */
     public function browseServices(): array
     {
         return $this->adapter->getServices();
     }
 
+    /**
+     * @return array{
+     *     dependencies: array<string>,
+     *     bindingHistory: array<string>,
+     *     resolved: mixed
+     * }
+     */
     public function inspectService(string $service): array
     {
         return [

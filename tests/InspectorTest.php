@@ -16,7 +16,6 @@ class InspectorTest extends TestCase
         $inspector = new Inspector($adapter);
 
         $result = $inspector->inspectService('test');
-        $this->assertIsArray($result);
         $this->assertArrayHasKey('dependencies', $result);
         $this->assertArrayHasKey('bindingHistory', $result);
         $this->assertArrayHasKey('resolved', $result);
@@ -41,15 +40,6 @@ class InspectorTest extends TestCase
         $property->setAccessible(true);
 
         $this->assertSame($adapter, $property->getValue($inspector));
-    }
-
-    public function testBrowseServicesReturnsArray(): void
-    {
-        $container = new Container();
-        $adapter = new LaravelAdapter($container);
-        $inspector = new Inspector($adapter);
-
-        $this->assertIsArray($inspector->browseServices());
     }
 
     public function testInspectorDetectsRegisteredServices(): void

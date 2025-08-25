@@ -12,7 +12,7 @@ interface AdapterInterface
     /** @return array<string, string> */
     public function getAliases(): array;
 
-    /** @return array<string, string> */
+    /** @return array<string, array{concrete: mixed, shared: bool}> */
     public function getBindings(): array;
 
     /** @return array<string> */
