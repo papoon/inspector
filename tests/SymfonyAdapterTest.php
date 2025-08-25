@@ -12,12 +12,12 @@ class SymfonyAdapterTest extends TestCase
     public function testGetServicesReturnsRegisteredServices(): void
     {
         $container = new ContainerBuilder();
-        $container->setDefinition('foo', new Definition(\stdClass::class));
-        $container->setDefinition('bar', new Definition(\DateTime::class));
+        $container->setDefinition('foo', new Definition(stdClass::class));
+        $container->setDefinition('bar', new Definition(DateTimeImmutable::class));
 
         $adapter = new SymfonyAdapter($container);
         $services = $adapter->getServices();
-       
+
         $this->assertContains('foo', $services);
         $this->assertContains('bar', $services);
         $this->assertCount(3, $services);
@@ -26,7 +26,7 @@ class SymfonyAdapterTest extends TestCase
     public function testGetAliasesReturnsAliases(): void
     {
         $container = new ContainerBuilder();
-        $container->setDefinition('foo', new Definition(\stdClass::class));
+        $container->setDefinition('foo', new Definition(stdClass::class));
         $container->setAlias('bar', 'foo');
 
         $adapter = new SymfonyAdapter($container);
@@ -39,20 +39,20 @@ class SymfonyAdapterTest extends TestCase
     public function testGetBindingsReturnsBindings(): void
     {
         $container = new ContainerBuilder();
-        $container->setDefinition('foo', new Definition(\stdClass::class));
+        $container->setDefinition('foo', new Definition(stdClass::class));
 
         $adapter = new SymfonyAdapter($container);
         $bindings = $adapter->getBindings();
-        
+
         $this->assertArrayHasKey('foo', $bindings);
-        $this->assertSame(\stdClass::class, $bindings['foo']['concrete']);
+        $this->assertSame(stdClass::class, $bindings['foo']['concrete']);
         $this->assertTrue($bindings['foo']['shared']);
     }
 
     public function testGetDependenciesReturnsArguments(): void
     {
         $container = new ContainerBuilder();
-        $def = new Definition(\stdClass::class);
+        $def = new Definition(stdClass::class);
         $def->setArguments(['bar', 'baz']);
         $container->setDefinition('foo', $def);
 
@@ -75,7 +75,7 @@ class SymfonyAdapterTest extends TestCase
     public function testResolveReturnsServiceInstance(): void
     {
         $container = new ContainerBuilder();
-        $def = new Definition(\stdClass::class);
+        $def = new Definition(stdClass::class);
         $def->setPublic(true); // Make the service public
         $container->setDefinition('foo', $def);
         $container->compile();
@@ -83,7 +83,7 @@ class SymfonyAdapterTest extends TestCase
         $adapter = new SymfonyAdapter($container);
         $resolved = $adapter->resolve('foo');
 
-        $this->assertInstanceOf(\stdClass::class, $resolved);
+        $this->assertInstanceOf(stdClass::class, $resolved);
     }
 
     public function testResolveReturnsNullForUnboundService(): void
