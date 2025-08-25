@@ -69,11 +69,41 @@ class SymfonyAdapter implements AdapterInterface
         return [];
     }
 
+    /** @return array<string, array<string>> Tag => [services] */
+    public function getTags(): array
+    {
+        $tags = [];
+        foreach ($this->container->getDefinitions() as $id => $definition) {
+            foreach ($definition->getTags() as $tag => $attributes) {
+                if (!isset($tags[$tag])) {
+                    $tags[$tag] = [];
+                }
+                $tags[$tag][] = $id;
+            }
+        }
+        return $tags;
+    }
+
+    /** @return array<string, mixed> */
+    public function getParameters(): array
+    {
+        return $this->container->getParameterBag()->all();
+    }
+
     public function resolve(string $service): mixed
     {
         if ($this->container->has($service)) {
             return $this->container->get($service);
         }
         return null;
+    }
+
+    /** @return bool */
+    public function isAutowired(string $service): bool
+    {
+        if (!$this->container->hasDefinition($service)) {
+            return false;
+        }
+        return $this->container->getDefinition($service)->isAutowired();
     }
 }
