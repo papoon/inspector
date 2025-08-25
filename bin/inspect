@@ -13,15 +13,32 @@ use Inspector\Console\ListServicesCommand;
 use Inspector\Console\InspectServiceCommand;
 use Inspector\Console\ListTagsCommand;
 use Inspector\Console\ListContextualBindingsCommand;
+use Inspector\Console\ListParametersCommand;
+use Inspector\Console\CheckAutowiringCommand;
 use Illuminate\Container\Container;
+use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
 
 $adapterType = $argv[1] ?? 'laravel';
+
+// Auto-detect adapter type if not specified
+if (!isset($argv[1])) {
+    // Try to detect Symfony by checking for symfony/dependency-injection
+    if (class_exists('Symfony\Component\DependencyInjection\ContainerBuilder')) {
+        $adapterType = 'symfony';
+    } elseif (class_exists('Illuminate\Container\Container')) {
+        $adapterType = 'laravel';
+    } else {
+        fwrite(STDERR, "Could not auto-detect container type. Please specify 'laravel' or 'symfony'.\n");
+        exit(1);
+    }
+}
 
 if ($adapterType === 'symfony') {
     $container = new ContainerBuilder();
     $adapter = new SymfonyAdapter($container);
     $inspector = new Inspector($adapter);
-    // Remove $argv[1] so commands work as expected
     array_shift($argv);
 } else {
     $container = new Container();
@@ -30,8 +47,33 @@ if ($adapterType === 'symfony') {
 }
 
 $application = new Application('Inspector CLI');
+
+// Helper to register commands only if supported
+function registerIfSupported(Application $app, Command $command, Inspector $inspector, string $method)
+{
+    if (method_exists($inspector->getAdapter(), $method)) {
+        $app->add($command);
+    } else {
+        // Register a stub command that shows "not supported"
+        $app->add(new class($command->getName()) extends Command {
+            private string $name;
+            public function __construct(string $name) { parent::__construct($name); $this->name = $name; }
+            protected function execute(InputInterface $input, OutputInterface $output): int {
+                $output->writeln("<error>Command '{$this->name}' not supported by this adapter.</error>");
+                return Command::FAILURE;
+            }
+        });
+    }
+}
+
+// Always supported
 $application->add(new ListServicesCommand($inspector));
 $application->add(new InspectServiceCommand($inspector));
-$application->add(new ListTagsCommand($inspector));
-$application->add(new ListContextualBindingsCommand($inspector));
+
+// Conditionally supported
+registerIfSupported($application, new ListTagsCommand($inspector), $inspector, 'getTags');
+registerIfSupported($application, new ListContextualBindingsCommand($inspector), $inspector, 'getContextualBindings');
+registerIfSupported($application, new ListParametersCommand($inspector), $inspector, 'getParameters');
+registerIfSupported($application, new CheckAutowiringCommand($inspector), $inspector, 'isAutowired');
+
 $application->run();
