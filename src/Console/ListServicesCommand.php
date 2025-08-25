@@ -36,13 +36,13 @@ class ListServicesCommand extends Command
         $services = $this->inspector->browseServices();
 
         if ($filter) {
-            $services = array_filter($services, fn($s) => stripos($s, $filter) !== false);
+            $services = array_filter($services, fn ($s) => mb_stripos($s, $filter) !== false);
         }
 
         if ($format === 'json') {
             $output->writeln(json_encode(array_values($services), JSON_PRETTY_PRINT));
         } else {
-            $output->writeln("Registered services:");
+            $output->writeln('Registered services:');
             foreach ($services as $service) {
                 $output->writeln("- $service");
             }
