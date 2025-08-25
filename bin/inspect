@@ -19,6 +19,9 @@ use Illuminate\Container\Container;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Inspector\Console\DependencyGraphCommand;
+use Inspector\Console\CircularDependencyCommand;
+use Inspector\Console\ServiceTraceCommand;
 
 $adapterType = $argv[1] ?? 'laravel';
 
@@ -75,5 +78,8 @@ registerIfSupported($application, new ListTagsCommand($inspector), $inspector, '
 registerIfSupported($application, new ListContextualBindingsCommand($inspector), $inspector, 'getContextualBindings');
 registerIfSupported($application, new ListParametersCommand($inspector), $inspector, 'getParameters');
 registerIfSupported($application, new CheckAutowiringCommand($inspector), $inspector, 'isAutowired');
+registerIfSupported($application, new DependencyGraphCommand($inspector), $inspector, 'getDependencies');
+registerIfSupported($application, new CircularDependencyCommand($inspector), $inspector, 'getCircularDependencies');
+registerIfSupported($application, new ServiceTraceCommand($inspector), $inspector, 'getServiceTrace');
 
 $application->run();
