@@ -5,15 +5,27 @@ declare(strict_types=1);
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use Symfony\Component\Console\Application;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Inspector\Inspector;
 use Inspector\Adapters\LaravelAdapter;
+use Inspector\Adapters\SymfonyAdapter;
 use Inspector\Console\ListServicesCommand;
 use Inspector\Console\InspectServiceCommand;
 use Illuminate\Container\Container;
 
-$container = new Container();
-$adapter = new LaravelAdapter($container);
-$inspector = new Inspector($adapter);
+$adapterType = $argv[1] ?? 'laravel';
+
+if ($adapterType === 'symfony') {
+    $container = new ContainerBuilder();
+    $adapter = new SymfonyAdapter($container);
+    $inspector = new Inspector($adapter);
+    // Remove $argv[1] so commands work as expected
+    array_shift($argv);
+} else {
+    $container = new Container();
+    $adapter = new LaravelAdapter($container);
+    $inspector = new Inspector($adapter);
+}
 
 $application = new Application('Inspector CLI');
 $application->add(new ListServicesCommand($inspector));
