@@ -1,4 +1,4 @@
-<?php
+
 # Service Container Inspector
 
 Framework-agnostic tool to inspect and debug PHP service containers.
