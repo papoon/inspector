@@ -57,6 +57,38 @@ class LaravelAdapter implements AdapterInterface
         return [];
     }
 
+    /**
+     * @return array<string, array<string>> Tag => [services]
+     */
+    public function getTags(): array
+    {
+        $reflection = new \ReflectionClass($this->container);
+        if ($reflection->hasProperty('tags')) {
+            $property = $reflection->getProperty('tags');
+            $property->setAccessible(true);
+            /** @var array<string, array<string>> $tags */
+            $tags = $property->getValue($this->container);
+            return $tags;
+        }
+        return [];
+    }
+
+    /**
+     * @return array<string, array<string, mixed>> Abstract => [Context => concrete]
+     */
+    public function getContextualBindings(): array
+    {
+        $reflection = new \ReflectionClass($this->container);
+        if ($reflection->hasProperty('contextual')) {
+            $property = $reflection->getProperty('contextual');
+            $property->setAccessible(true);
+            /** @var array<string, array<string, mixed>> $contextual */
+            $contextual = $property->getValue($this->container);
+            return $contextual;
+        }
+        return [];
+    }
+
     public function resolve(string $service): mixed
     {
         return $this->container->bound($service)
