@@ -6,6 +6,7 @@ namespace Inspector\Adapters;
 
 use Inspector\AdapterInterface;
 use Illuminate\Container\Container;
+use ReflectionClass;
 
 class LaravelAdapter implements AdapterInterface
 {
@@ -26,7 +27,7 @@ class LaravelAdapter implements AdapterInterface
     /** @return array<string, string> */
     public function getAliases(): array
     {
-        $reflection = new \ReflectionClass($this->container);
+        $reflection = new ReflectionClass($this->container);
         if ($reflection->hasProperty('aliases')) {
             $property = $reflection->getProperty('aliases');
             $property->setAccessible(true);
@@ -62,7 +63,7 @@ class LaravelAdapter implements AdapterInterface
      */
     public function getTags(): array
     {
-        $reflection = new \ReflectionClass($this->container);
+        $reflection = new ReflectionClass($this->container);
         if ($reflection->hasProperty('tags')) {
             $property = $reflection->getProperty('tags');
             $property->setAccessible(true);
@@ -78,7 +79,7 @@ class LaravelAdapter implements AdapterInterface
      */
     public function getContextualBindings(): array
     {
-        $reflection = new \ReflectionClass($this->container);
+        $reflection = new ReflectionClass($this->container);
         if ($reflection->hasProperty('contextual')) {
             $property = $reflection->getProperty('contextual');
             $property->setAccessible(true);

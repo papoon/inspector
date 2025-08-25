@@ -1,4 +1,5 @@
 <?php
+
 namespace Inspector;
 
 class Inspector
@@ -33,7 +34,7 @@ class Inspector
             'resolved' => $this->adapter->resolve($service),
         ];
     }
-    
+
     public function getAdapter(): AdapterInterface
     {
         return $this->adapter;

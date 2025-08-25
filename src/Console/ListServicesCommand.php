@@ -23,7 +23,7 @@ class ListServicesCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $services = $this->inspector->browseServices();
-        $output->writeln("Registered services:");
+        $output->writeln('Registered services:');
         foreach ($services as $service) {
             $output->writeln("- $service");
         }
