@@ -11,6 +11,8 @@ use Inspector\Adapters\LaravelAdapter;
 use Inspector\Adapters\SymfonyAdapter;
 use Inspector\Console\ListServicesCommand;
 use Inspector\Console\InspectServiceCommand;
+use Inspector\Console\ListTagsCommand;
+use Inspector\Console\ListContextualBindingsCommand;
 use Illuminate\Container\Container;
 
 $adapterType = $argv[1] ?? 'laravel';
@@ -30,4 +32,6 @@ if ($adapterType === 'symfony') {
 $application = new Application('Inspector CLI');
 $application->add(new ListServicesCommand($inspector));
 $application->add(new InspectServiceCommand($inspector));
+$application->add(new ListTagsCommand($inspector));
+$application->add(new ListContextualBindingsCommand($inspector));
 $application->run();

@@ -33,4 +33,9 @@ class Inspector
             'resolved' => $this->adapter->resolve($service),
         ];
     }
+    
+    public function getAdapter(): AdapterInterface
+    {
+        return $this->adapter;
+    }
 }

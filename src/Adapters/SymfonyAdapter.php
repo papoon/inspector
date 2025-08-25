@@ -32,14 +32,14 @@ class SymfonyAdapter implements AdapterInterface
         return $aliases;
     }
 
-    /** @return array<string, array{class: string|null, public: bool}> */
+    /** @return array<string, array{concrete: mixed, shared: bool}> */
     public function getBindings(): array
     {
         $bindings = [];
         foreach ($this->container->getDefinitions() as $id => $definition) {
             $bindings[$id] = [
-                'class' => $definition->getClass(),
-                'public' => $definition->isPublic(),
+                'concrete' => $definition->getClass(), // Use class as "concrete"
+                'shared' => $definition->isShared(),   // Use isShared for "shared"
             ];
         }
         return $bindings;

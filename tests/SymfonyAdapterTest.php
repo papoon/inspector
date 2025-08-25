@@ -45,8 +45,8 @@ class SymfonyAdapterTest extends TestCase
         $bindings = $adapter->getBindings();
         
         $this->assertArrayHasKey('foo', $bindings);
-        $this->assertSame(\stdClass::class, $bindings['foo']['class']);
-        $this->assertFalse($bindings['foo']['public']);
+        $this->assertSame(\stdClass::class, $bindings['foo']['concrete']);
+        $this->assertTrue($bindings['foo']['shared']);
     }
 
     public function testGetDependenciesReturnsArguments(): void
