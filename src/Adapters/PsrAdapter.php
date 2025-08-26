@@ -162,4 +162,14 @@ class PsrAdapter implements AdapterInterface
     {
         return null;
     }
+    
+    public function setMutationDispatcher(\Inspector\MutationEventDispatcher $dispatcher): void
+    {
+        // No-op for PSR-11 containers
+    }
+
+    public function getMutations(): array
+    {
+        return [];
+    }
 }

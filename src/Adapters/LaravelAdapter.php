@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Inspector\Adapters;
 
 use Inspector\AdapterInterface;
+use Inspector\MutationEventDispatcher;
 use Illuminate\Container\Container;
 use ReflectionClass;
 use ReflectionNamedType;
@@ -14,10 +15,24 @@ use Throwable;
 class LaravelAdapter implements AdapterInterface
 {
     protected Container $container;
+    protected array $mutations = [];
+    protected ?MutationEventDispatcher $mutationDispatcher = null;
 
     public function __construct(Container $container)
     {
         $this->container = $container;
+
+        // Optionally, wrap container methods to track mutations
+        $container->afterResolving(function ($object, $app) {
+            // Example: track resolution (optional)
+            $this->mutations[] = [
+                'timestamp' => microtime(true),
+                'type' => 'resolve',
+                'action' => 'resolved',
+                'service' => is_object($object) ? get_class($object) : (string)$object,
+                'details' => [],
+            ];
+        });
     }
 
     /** @return array<string> */
@@ -246,5 +261,75 @@ class LaravelAdapter implements AdapterInterface
             return $tags;
         }
         return [];
+    }
+
+    public function setMutationDispatcher(MutationEventDispatcher $dispatcher): void
+    {
+        $this->mutationDispatcher = $dispatcher;
+    }
+
+    protected function trackMutation(array $mutation): void
+    {
+        $this->mutations[] = $mutation;
+        if ($this->mutationDispatcher) {
+            $this->mutationDispatcher->dispatch($mutation);
+        }
+    }
+
+    public function bind(string $abstract, $concrete = null, bool $shared = false)
+    {
+        $this->container->bind($abstract, $concrete, $shared);
+        $mutation = [
+            'timestamp' => microtime(true),
+            'type' => 'binding',
+            'action' => 'added',
+            'service' => $abstract,
+            'details' => ['concrete' => $concrete, 'shared' => $shared],
+        ];
+        $this->trackMutation($mutation);
+    }
+
+    public function unbind(string $abstract)
+    {
+        unset($this->container->getBindings()[$abstract]);
+        $mutation = [
+            'timestamp' => microtime(true),
+            'type' => 'binding',
+            'action' => 'removed',
+            'service' => $abstract,
+            'details' => [],
+        ];
+        $this->trackMutation($mutation);
+    }
+
+    public function alias(string $abstract, string $alias)
+    {
+        $this->container->alias($abstract, $alias);
+        $mutation = [
+            'timestamp' => microtime(true),
+            'type' => 'alias',
+            'action' => 'added',
+            'service' => $alias,
+            'details' => ['target' => $abstract],
+        ];
+        $this->trackMutation($mutation);
+    }
+
+    public function unalias(string $alias)
+    {
+        unset($this->container->getAliases()[$alias]);
+        $mutation = [
+            'timestamp' => microtime(true),
+            'type' => 'alias',
+            'action' => 'removed',
+            'service' => $alias,
+            'details' => [],
+        ];
+        $this->trackMutation($mutation);
+    }
+
+    public function getMutations(): array
+    {
+        return $this->mutations;
     }
 }

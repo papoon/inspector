@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Inspector\Adapters;
 
 use Inspector\AdapterInterface;
+use Inspector\MutationEventDispatcher;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use ReflectionClass;
 use ReflectionNamedType;
@@ -14,6 +15,8 @@ use Throwable;
 class SymfonyAdapter implements AdapterInterface
 {
     protected ContainerBuilder $container;
+    protected array $mutations = [];
+    protected ?MutationEventDispatcher $mutationDispatcher = null;
 
     public function __construct(ContainerBuilder $container)
     {
@@ -230,5 +233,49 @@ class SymfonyAdapter implements AdapterInterface
             }
         }
         return $tags;
+    }
+
+    public function setMutationDispatcher(MutationEventDispatcher $dispatcher): void
+    {
+        $this->mutationDispatcher = $dispatcher;
+    }
+
+    protected function trackMutation(array $mutation): void
+    {
+        $this->mutations[] = $mutation;
+        if ($this->mutationDispatcher) {
+            $this->mutationDispatcher->dispatch($mutation);
+        }
+    }
+
+    public function setDefinition(string $id, $definition)
+    {
+        $this->container->setDefinition($id, $definition);
+        $mutation = [
+            'timestamp' => microtime(true),
+            'type' => 'binding',
+            'action' => 'added',
+            'service' => $id,
+            'details' => [],
+        ];
+        $this->trackMutation($mutation);
+    }
+
+    public function removeDefinition(string $id)
+    {
+        $this->container->removeDefinition($id);
+        $mutation = [
+            'timestamp' => microtime(true),
+            'type' => 'binding',
+            'action' => 'removed',
+            'service' => $id,
+            'details' => [],
+        ];
+        $this->trackMutation($mutation);
+    }
+
+    public function getMutations(): array
+    {
+        return $this->mutations;
     }
 }

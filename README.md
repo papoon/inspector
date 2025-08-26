@@ -1,159 +1,163 @@
 # Service Container Inspector
 
-Framework-agnostic tool to inspect and debug PHP service containers.
-
 [![Coverage Status](https://codecov.io/gh/papoon/inspector/branch/main/graph/badge.svg)](https://codecov.io/gh/papoon/inspector)
 
-## Installation
-
-```bash
-composer require papoon/inspector
-```
-
-## Usage
-
-### Web Dashboard
-
-#### How to Access in Laravel, Symfony, or Vanilla PHP
-
-This package provides a web dashboard via `public/index.php` that works with Laravel, Symfony, or any PSR-11 compatible container.
-
-**Steps:**
-
-1. **Expose the dashboard:**
-   - Copy or symlink `vendor/papoon/inspector/public/index.php` to your project's `public/inspector.php` (or any desired location).
-   - Example for Laravel:
-     ```bash
-     cp vendor/papoon/inspector/public/index.php public/inspector.php
-     ```
-
-2. **Visit the dashboard in your browser:**
-   ```
-   http://localhost:8000/inspector.php
-   ```
-
-3. **Adapter selection:**
-   - Use the dropdown on the dashboard to switch between Laravel, Symfony, or PSR-11 containers.
-   - The dashboard auto-detects the real Laravel or Symfony container for full introspection.
-   - For PSR-11, configure your container in `config/container.php` (see below).
-
-4. **Search/filter services:**
-   - Use the search box to filter services by name.
-
-#### PSR-11 Container Configuration
-
-If you want to use a PSR-11 compatible container, create or edit `config/container.php` in your project root:
-
-```php
-<?php
-
-return [
-    'psr' => [
-        'class' => \Your\Psr\Container::class, // Fully qualified class name
-        'args' => [
-            // Constructor arguments for your container, if any
-        ],
-    ],
-];
-```
-
-The dashboard will automatically use your custom config if present.
-
----
-
-### CLI Usage
-
-#### In a Vanilla PHP Project
-
-Run the CLI tool directly:
-
-```bash
-php bin/inspect services:list
-php bin/inspect services:inspect <service>
-php bin/inspect services:list --filter=foo           # Filter/search services
-php bin/inspect services:list --format=json          # Output as JSON for CI
-php bin/inspect services:tags                        # List service tags (Laravel/Symfony)
-php bin/inspect services:contextual                  # List contextual bindings (Laravel)
-php bin/inspect services:parameters                  # List parameters (Symfony)
-php bin/inspect services:autowired <service>         # Check if service is autowired (Symfony)
-php bin/inspect services:graph                       # Show dependency graph
-php bin/inspect services:circular                    # Detect circular dependencies
-php bin/inspect services:trace <service>             # Trace service resolution
-```
-
-To use the Symfony adapter, pass `symfony` as the first argument:
-
-```bash
-php bin/inspect symfony services:list
-php bin/inspect symfony services:tags
-php bin/inspect symfony services:parameters
-php bin/inspect symfony services:autowired <service>
-```
-
-#### In a Laravel Project
-
-1. **Register the commands in `app/Console/Kernel.php`:**
-
-```php
-protected $commands = [
-    \Inspector\Console\ListServicesCommand::class,
-    \Inspector\Console\InspectServiceCommand::class,
-    \Inspector\Console\ListTagsCommand::class,
-    \Inspector\Console\ListContextualBindingsCommand::class,
-    \Inspector\Console\DependencyGraphCommand::class,
-    \Inspector\Console\CircularDependencyCommand::class,
-    \Inspector\Console\ServiceTraceCommand::class,
-];
-```
-
-2. **Run with Artisan:**
-
-```bash
-php artisan services:list
-php artisan services:inspect <service>
-php artisan services:tags
-php artisan services:contextual
-php artisan services:graph
-php artisan services:circular
-php artisan services:trace <service>
-```
+A powerful tool for inspecting, visualizing, and tracking mutations in PHP service containers (Laravel, Symfony, PSR-11).
 
 ---
 
 ## Features
 
-- List all registered services
-- Inspect individual service details
-- Filter/search services by name
-- Output results in JSON format for CI integration
-- List service tags (Laravel/Symfony)
-- List contextual bindings (Laravel)
-- List container parameters (Symfony)
-- Check autowiring status (Symfony)
-- Show service dependency graph
-- Detect circular dependencies
-- Trace service resolution
-- Works with Laravel, Symfony, and any PSR-11 compatible container
+- Web dashboard for service inspection and visualization
+- CLI commands for analysis and export
+- Mutation tracking (bindings, aliases, etc.)
+- Dependency graph export (Graphviz/D3.js)
+- Service comparison across environments
+- Tagged service listing
+- Circular dependency and duplicate binding detection
 
 ---
 
-## Testing
+## Installation
 
 ```bash
-vendor/bin/phpunit
+composer require papoon/inspector --dev
 ```
 
 ---
 
-## Code Style & Static Analysis
+## Quick Start
+
+### Web Dashboard
 
 ```bash
-vendor/bin/php-cs-fixer fix
-vendor/bin/phpstan analyse
+php -S localhost:8000 -t public
 ```
+Visit [http://localhost:8000](http://localhost:8000) in your browser.
+
+### CLI Usage
+
+List services:
+```bash
+php bin/inspect inspector:list-services
+```
+
+Compare containers:
+```bash
+php bin/inspect inspector:compare-containers local staging prod
+```
+
+Export service map:
+```bash
+php bin/inspect inspector:export-map json
+```
+
+---
+
+## Usage in Laravel
+
+1. **Wrap your container with the Inspector adapter:**
+
+    ```php
+    use Inspector\Adapters\LaravelAdapter;
+    use Illuminate\Container\Container;
+
+    $container = app();
+    $adapter = new LaravelAdapter($container);
+    ```
+
+2. **Track mutations:**
+
+    ```php
+    use Inspector\MutationEventDispatcher;
+
+    $dispatcher = new MutationEventDispatcher();
+    $dispatcher->listen(function ($mutation) {
+        logger()->info('Container mutation', $mutation);
+    });
+    $adapter->setMutationDispatcher($dispatcher);
+    ```
+
+3. **Use adapter methods for mutations:**
+
+    ```php
+    $adapter->bind('foo', function () { return new Foo(); });
+    $adapter->alias('foo', 'bar');
+    ```
+
+4. **Inspect services and mutations:**
+
+    ```php
+    use Inspector\Inspector;
+
+    $inspector = new Inspector($adapter);
+    $services = $inspector->browseServices();
+    $mutations = $inspector->getMutations();
+    ```
+
+---
+
+## Usage in Symfony
+
+1. **Wrap your container with the Inspector adapter:**
+
+    ```php
+    use Inspector\Adapters\SymfonyAdapter;
+    use Symfony\Component\DependencyInjection\ContainerBuilder;
+
+    $container = $this->container;
+    $adapter = new SymfonyAdapter($container);
+    ```
+
+2. **Track mutations:**
+
+    ```php
+    use Inspector\MutationEventDispatcher;
+
+    $dispatcher = new MutationEventDispatcher();
+    $dispatcher->listen(function ($mutation) {
+        // Log or display mutation events
+    });
+    $adapter->setMutationDispatcher($dispatcher);
+    ```
+
+3. **Use adapter methods for mutations:**
+
+    ```php
+    $adapter->setDefinition('foo', new Definition(Foo::class));
+    $adapter->removeDefinition('foo');
+    ```
+
+4. **Inspect services and mutations:**
+
+    ```php
+    use Inspector\Inspector;
+
+    $inspector = new Inspector($adapter);
+    $services = $inspector->browseServices();
+    $mutations = $inspector->getMutations();
+    ```
+
+---
+
+## Test Coverage
+
+To generate a coverage report locally:
+
+```bash
+vendor/bin/phpunit --coverage-html coverage
+```
+Open `coverage/index.html` in your browser to view the report.
 
 ---
 
 ## Contributing
 
-Feel free to open issues or submit pull requests!
+Pull requests and issues are welcome!  
+Please ensure all code is covered by tests and passes CI.
+
+---
+
+## License
+
+MIT
