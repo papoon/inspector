@@ -78,9 +78,8 @@ class Inspector
     {
         $broken = [];
         foreach ($this->browseServices() as $service) {
-            
             $error = $this->adapter->getResolutionError($service);
-            
+
             if ($error) {
                 $broken[$service] = $error;
             }
@@ -91,5 +90,21 @@ class Inspector
     public function getAdapter(): AdapterInterface
     {
         return $this->adapter;
+    }
+
+    /**
+     * @return array<string> List of duplicate service names
+     */
+    public function getDuplicateBindings(): array
+    {
+        return $this->adapter->findDuplicateBindings();
+    }
+
+    /**
+     * @return array<int, array<string>> List of alias loops (each loop is an array of service names)
+     */
+    public function getAliasLoops(): array
+    {
+        return $this->adapter->findAliasLoops();
     }
 }

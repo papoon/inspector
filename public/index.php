@@ -278,6 +278,26 @@ $adapterFilter = $_GET['adapter_filter'] ?? $adapterType;
 ?>
         <button type="submit">Filter</button>
     </form>
+
+    <?php
+$duplicates = $inspector->getDuplicateBindings();
+if (!empty($duplicates)) {
+    echo '<h2>Duplicate Bindings</h2><ul>';
+    foreach ($duplicates as $service) {
+        echo '<li>' . htmlspecialchars($service, ENT_QUOTES, 'UTF-8') . '</li>';
+    }
+    echo '</ul>';
+}
+
+$loops = $inspector->getAliasLoops();
+if (!empty($loops)) {
+    echo '<h2>Alias Loops</h2><ul>';
+    foreach ($loops as $loop) {
+        echo '<li>' . htmlspecialchars(implode(' &rarr; ', $loop), ENT_QUOTES, 'UTF-8') . '</li>';
+    }
+    echo '</ul>';
+}
+?>
 </body>
 
 </html>

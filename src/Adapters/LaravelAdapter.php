@@ -199,4 +199,39 @@ class LaravelAdapter implements AdapterInterface
             ];
         }
     }
+
+    public function findDuplicateBindings(): array
+    {
+        $bindings = $this->getBindings();
+        $counts = [];
+        $duplicates = [];
+        foreach (array_keys($bindings) as $service) {
+            $counts[$service] = ($counts[$service] ?? 0) + 1;
+        }
+        foreach ($counts as $service => $count) {
+            if ($count > 1) {
+                $duplicates[] = $service;
+            }
+        }
+        return $duplicates;
+    }
+
+    public function findAliasLoops(): array
+    {
+        $aliases = $this->getAliases();
+        $loops = [];
+        foreach ($aliases as $alias => $target) {
+            $visited = [$alias];
+            $current = $target;
+            while (isset($aliases[$current])) {
+                if (in_array($current, $visited, true)) {
+                    $loops[] = array_merge($visited, [$current]);
+                    break;
+                }
+                $visited[] = $current;
+                $current = $aliases[$current];
+            }
+        }
+        return $loops;
+    }
 }

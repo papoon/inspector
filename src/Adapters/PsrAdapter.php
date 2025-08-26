@@ -9,10 +9,29 @@ use Psr\Container\ContainerInterface;
 use ReflectionClass;
 use ReflectionNamedType;
 use ReflectionUnionType;
+use Throwable;
 
 class PsrAdapter implements AdapterInterface
 {
     protected ContainerInterface $container;
+
+    /**
+     * @return array<string>
+     */
+    public function findDuplicateBindings(): array
+    {
+        // PSR containers do not expose binding details, so return empty
+        return [];
+    }
+
+    /**
+     * @return array<array<string>>
+     */
+    public function findAliasLoops(): array
+    {
+        // PSR containers do not expose alias details, so return empty
+        return [];
+    }
 
     public function __construct(ContainerInterface $container)
     {
@@ -96,7 +115,7 @@ class PsrAdapter implements AdapterInterface
                             $typeName = $type->getName();
                         } elseif ($type instanceof ReflectionUnionType) {
                             $typeName = implode('|', array_map(
-                                fn($t) => $t->getName(),
+                                fn ($t) => $t->getName(),
                                 $type->getTypes()
                             ));
                         }
@@ -129,7 +148,7 @@ class PsrAdapter implements AdapterInterface
      *   code: int,
      *   file: string,
      *   line: int,
-     *   exception: \Throwable
+     *   exception: Throwable
      * }|null
      */
     public function getResolutionError(string $service): ?array
