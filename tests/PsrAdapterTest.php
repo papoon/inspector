@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
@@ -7,7 +8,9 @@ use Inspector\Adapters\PsrAdapter;
 
 class DummyPsrDep
 {
-    public function __construct(public string $foo, public int $bar = 42) {}
+    public function __construct(public string $foo, public int $bar = 42)
+    {
+    }
 }
 
 class SimplePsrContainer implements ContainerInterface
@@ -19,6 +22,7 @@ class SimplePsrContainer implements ContainerInterface
         }
         throw new NotFoundException();
     }
+
     public function has(string $id): bool
     {
         return $id === 'dummy';
@@ -46,4 +50,6 @@ class PsrAdapterTest extends TestCase
     }
 }
 
-class NotFoundException extends \Exception {}
+class NotFoundException extends Exception
+{
+}

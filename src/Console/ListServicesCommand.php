@@ -34,21 +34,21 @@ class ListServicesCommand extends Command
         $services = $this->inspector->browseServices();
 
         if ($filter) {
-            $filterLower = strtolower($filter);
-            $services = array_filter($services, function($s) use ($filterLower) {
+            $filterLower = mb_strtolower($filter);
+            $services = array_filter($services, function ($s) use ($filterLower) {
                 $details = $this->inspector->inspectService($s);
                 // Match by service name
-                if (stripos($s, $filterLower) !== false) {
+                if (mb_stripos($s, $filterLower) !== false) {
                     return true;
                 }
                 // Match by class
-                if (!empty($details['class']) && stripos((string)$details['class'], $filterLower) !== false) {
+                if (!empty($details['class']) && mb_stripos((string)$details['class'], $filterLower) !== false) {
                     return true;
                 }
                 // Match by interfaces
                 if (!empty($details['interfaces'])) {
                     foreach ($details['interfaces'] as $iface) {
-                        if (stripos((string)$iface, $filterLower) !== false) {
+                        if (mb_stripos((string)$iface, $filterLower) !== false) {
                             return true;
                         }
                     }
@@ -57,12 +57,12 @@ class ListServicesCommand extends Command
             });
         }
 
-        $output->writeln("Registered services:");
+        $output->writeln('Registered services:');
         foreach ($services as $service) {
             $output->writeln("- $service");
             $details = $this->inspector->inspectService($service);
             if (!empty($details['constructor_dependencies'])) {
-                $output->writeln("  Constructor dependencies:");
+                $output->writeln('  Constructor dependencies:');
                 foreach ($details['constructor_dependencies'] as $dep) {
                     $output->writeln("    - {$dep['name']}: {$dep['type']}" . ($dep['isOptional'] ? ' (optional)' : ''));
                 }

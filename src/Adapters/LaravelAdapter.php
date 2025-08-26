@@ -7,6 +7,9 @@ namespace Inspector\Adapters;
 use Inspector\AdapterInterface;
 use Illuminate\Container\Container;
 use ReflectionClass;
+use ReflectionNamedType;
+use ReflectionUnionType;
+use Throwable;
 
 class LaravelAdapter implements AdapterInterface
 {
@@ -103,17 +106,17 @@ class LaravelAdapter implements AdapterInterface
 
         $dependencies = [];
         if ($class && class_exists($class)) {
-            $reflection = new \ReflectionClass($class);
+            $reflection = new ReflectionClass($class);
             $constructor = $reflection->getConstructor();
             if ($constructor) {
                 foreach ($constructor->getParameters() as $param) {
                     $type = $param->getType();
                     $typeName = null;
-                    if ($type instanceof \ReflectionNamedType) {
+                    if ($type instanceof ReflectionNamedType) {
                         $typeName = $type->getName();
-                    } elseif ($type instanceof \ReflectionUnionType) {
+                    } elseif ($type instanceof ReflectionUnionType) {
                         $typeName = implode('|', array_map(
-                            fn($t) => $t->getName(),
+                            fn ($t) => $t->getName(),
                             $type->getTypes()
                         ));
                     }
@@ -153,7 +156,7 @@ class LaravelAdapter implements AdapterInterface
                 if (is_object($instance)) {
                     return get_class($instance);
                 }
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 // Could not resolve, return null
                 return null;
             }

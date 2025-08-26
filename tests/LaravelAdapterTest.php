@@ -8,7 +8,9 @@ use Inspector\Adapters\LaravelAdapter;
 
 class DummyLaravelDep
 {
-    public function __construct(public string $foo, public int $bar = 42) {}
+    public function __construct(public string $foo, public int $bar = 42)
+    {
+    }
 }
 
 class LaravelAdapterTest extends TestCase

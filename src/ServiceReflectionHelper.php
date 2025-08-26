@@ -2,6 +2,10 @@
 
 namespace Inspector;
 
+use ReflectionClass;
+use ReflectionNamedType;
+use ReflectionUnionType;
+
 class ServiceReflectionHelper
 {
     /**
@@ -12,18 +16,18 @@ class ServiceReflectionHelper
     {
         $dependencies = [];
         if (class_exists($class)) {
-            $reflection = new \ReflectionClass($class);
+            $reflection = new ReflectionClass($class);
             $constructor = $reflection->getConstructor();
             if ($constructor) {
                 foreach ($constructor->getParameters() as $param) {
                     $type = $param->getType();
                     $typeName = null;
-                    if ($type instanceof \ReflectionNamedType) {
+                    if ($type instanceof ReflectionNamedType) {
                         $typeName = $type->getName();
-                    } elseif ($type instanceof \ReflectionUnionType) {
+                    } elseif ($type instanceof ReflectionUnionType) {
                         // For union types, join all names with '|'
                         $typeName = implode('|', array_map(
-                            fn($t) => $t->getName(),
+                            fn ($t) => $t->getName(),
                             $type->getTypes()
                         ));
                     }

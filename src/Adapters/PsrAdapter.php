@@ -6,6 +6,9 @@ namespace Inspector\Adapters;
 
 use Inspector\AdapterInterface;
 use Psr\Container\ContainerInterface;
+use ReflectionClass;
+use ReflectionNamedType;
+use ReflectionUnionType;
 
 class PsrAdapter implements AdapterInterface
 {
@@ -85,17 +88,17 @@ class PsrAdapter implements AdapterInterface
             if (is_object($instance)) {
                 $class = get_class($instance);
 
-                $reflection = new \ReflectionClass($class);
+                $reflection = new ReflectionClass($class);
                 $constructor = $reflection->getConstructor();
                 if ($constructor) {
                     foreach ($constructor->getParameters() as $param) {
                         $type = $param->getType();
                         $typeName = null;
-                        if ($type instanceof \ReflectionNamedType) {
+                        if ($type instanceof ReflectionNamedType) {
                             $typeName = $type->getName();
-                        } elseif ($type instanceof \ReflectionUnionType) {
+                        } elseif ($type instanceof ReflectionUnionType) {
                             $typeName = implode('|', array_map(
-                                fn($t) => $t->getName(),
+                                fn ($t) => $t->getName(),
                                 $type->getTypes()
                             ));
                         }

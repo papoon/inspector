@@ -9,7 +9,9 @@ use Inspector\Adapters\SymfonyAdapter;
 
 class DummySymfonyDep
 {
-    public function __construct(public string $foo, public int $bar = 42) {}
+    public function __construct(public string $foo, public int $bar = 42)
+    {
+    }
 }
 
 class SymfonyAdapterTest extends TestCase
