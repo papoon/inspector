@@ -7,6 +7,9 @@ namespace Inspector\Adapters;
 use Inspector\AdapterInterface;
 use Illuminate\Container\Container;
 use ReflectionClass;
+use ReflectionNamedType;
+use ReflectionUnionType;
+use Throwable;
 
 class LaravelAdapter implements AdapterInterface
 {
@@ -95,5 +98,73 @@ class LaravelAdapter implements AdapterInterface
         return $this->container->bound($service)
             ? $this->container->make($service)
             : null;
+    }
+
+    public function inspectService(string $service): array
+    {
+        $class = $this->getClassForService($service);
+
+        $dependencies = [];
+        if ($class && class_exists($class)) {
+            $reflection = new ReflectionClass($class);
+            $constructor = $reflection->getConstructor();
+            if ($constructor) {
+                foreach ($constructor->getParameters() as $param) {
+                    $type = $param->getType();
+                    $typeName = null;
+                    if ($type instanceof ReflectionNamedType) {
+                        $typeName = $type->getName();
+                    } elseif ($type instanceof ReflectionUnionType) {
+                        $typeName = implode('|', array_map(
+                            fn ($t) => $t->getName(),
+                            $type->getTypes()
+                        ));
+                    }
+                    $dependencies[] = [
+                        'name' => $param->getName(),
+                        'type' => $typeName,
+                        'isOptional' => $param->isOptional(),
+                    ];
+                }
+            }
+        }
+
+        return [
+            'class' => $class ?? null,
+            'interfaces' => $class && class_exists($class) ? array_values(class_implements($class)) : [],
+            'constructor_dependencies' => $dependencies,
+            'dependencies' => $this->getDependencies($service),
+            'bindingHistory' => $this->getBindingHistory($service),
+            'resolved' => $this->resolve($service),
+        ];
+    }
+
+    /**
+     * Attempt to resolve the class name for a given service.
+     */
+    protected function getClassForService(string $service): ?string
+    {
+        // Try to resolve the concrete from the container
+        if ($this->container->bound($service)) {
+            $concrete = $this->container->getBindings()[$service]['concrete'] ?? null;
+            if (is_string($concrete) && class_exists($concrete)) {
+                return $concrete;
+            }
+            // If concrete is a closure, try to resolve and get its class
+            try {
+                $instance = $this->container->make($service);
+                if (is_object($instance)) {
+                    return get_class($instance);
+                }
+            } catch (Throwable $e) {
+                // Could not resolve, return null
+                return null;
+            }
+        }
+        // If not bound, maybe it's a class name itself
+        if (class_exists($service)) {
+            return $service;
+        }
+        return null;
     }
 }

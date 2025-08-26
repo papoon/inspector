@@ -3,9 +3,16 @@
 declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
-use Inspector\Adapters\SymfonyAdapter;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Definition;
+use Inspector\Adapters\SymfonyAdapter;
+
+class DummySymfonyDep
+{
+    public function __construct(public string $foo, public int $bar = 42)
+    {
+    }
+}
 
 class SymfonyAdapterTest extends TestCase
 {
@@ -93,5 +100,27 @@ class SymfonyAdapterTest extends TestCase
 
         $resolved = $adapter->resolve('not_bound');
         $this->assertNull($resolved);
+    }
+
+    public function testInspectServiceReturnsConstructorDependencies(): void
+    {
+        $container = new ContainerBuilder();
+        $def = new Definition(DummySymfonyDep::class);
+        $def->setArguments(['foo', 42]);
+        $container->setDefinition('dummy', $def);
+
+        $adapter = new SymfonyAdapter($container);
+
+        $details = $adapter->inspectService('dummy');
+        $deps = $details['constructor_dependencies'];
+
+        $this->assertNotEmpty($deps);
+        $this->assertEquals('foo', $deps[0]['name']);
+        $this->assertEquals('string', $deps[0]['type']);
+        $this->assertFalse($deps[0]['isOptional']);
+
+        $this->assertEquals('bar', $deps[1]['name']);
+        $this->assertEquals('int', $deps[1]['type']);
+        $this->assertTrue($deps[1]['isOptional']);
     }
 }

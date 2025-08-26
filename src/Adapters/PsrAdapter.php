@@ -6,6 +6,9 @@ namespace Inspector\Adapters;
 
 use Inspector\AdapterInterface;
 use Psr\Container\ContainerInterface;
+use ReflectionClass;
+use ReflectionNamedType;
+use ReflectionUnionType;
 
 class PsrAdapter implements AdapterInterface
 {
@@ -29,27 +32,35 @@ class PsrAdapter implements AdapterInterface
         return [];
     }
 
+    /**
+     * @return array<string>
+     */
     public function getAliases(): array
     {
-        // No standard way in PSR-11
         return [];
     }
 
+    /**
+     * @return array<string>
+     */
     public function getBindings(): array
     {
-        // No standard way in PSR-11
         return [];
     }
 
+    /**
+     * @return array<string>
+     */
     public function getDependencies(string $service): array
     {
-        // No standard way in PSR-11
         return [];
     }
 
+    /**
+     * @return array<string>
+     */
     public function getBindingHistory(string $service): array
     {
-        // No standard way in PSR-11
         return [];
     }
 
@@ -64,5 +75,50 @@ class PsrAdapter implements AdapterInterface
     public function getContainerType(): string
     {
         return get_class($this->container);
+    }
+
+    public function inspectService(string $service): array
+    {
+        $class = null;
+        $constructorDependencies = [];
+
+        // Try to resolve the service and get its class
+        if ($this->container->has($service)) {
+            $instance = $this->container->get($service);
+            if (is_object($instance)) {
+                $class = get_class($instance);
+
+                $reflection = new ReflectionClass($class);
+                $constructor = $reflection->getConstructor();
+                if ($constructor) {
+                    foreach ($constructor->getParameters() as $param) {
+                        $type = $param->getType();
+                        $typeName = null;
+                        if ($type instanceof ReflectionNamedType) {
+                            $typeName = $type->getName();
+                        } elseif ($type instanceof ReflectionUnionType) {
+                            $typeName = implode('|', array_map(
+                                fn ($t) => $t->getName(),
+                                $type->getTypes()
+                            ));
+                        }
+                        $constructorDependencies[] = [
+                            'name' => $param->getName(),
+                            'type' => $typeName,
+                            'isOptional' => $param->isOptional(),
+                        ];
+                    }
+                }
+            }
+        }
+
+        return [
+            'class' => $class ?? null,
+            'interfaces' => $class && class_exists($class) ? array_values(class_implements($class)) : [],
+            'constructor_dependencies' => $constructorDependencies,
+            'dependencies' => $this->getDependencies($service),
+            'bindingHistory' => $this->getBindingHistory($service),
+            'resolved' => $this->resolve($service),
+        ];
     }
 }

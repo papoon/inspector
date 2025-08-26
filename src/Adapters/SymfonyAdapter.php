@@ -6,6 +6,9 @@ namespace Inspector\Adapters;
 
 use Inspector\AdapterInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use ReflectionClass;
+use ReflectionNamedType;
+use ReflectionUnionType;
 
 class SymfonyAdapter implements AdapterInterface
 {
@@ -105,5 +108,49 @@ class SymfonyAdapter implements AdapterInterface
             return false;
         }
         return $this->container->getDefinition($service)->isAutowired();
+    }
+
+    public function inspectService(string $service): array
+    {
+        $class = null;
+        $constructorDependencies = [];
+
+        if ($this->container->hasDefinition($service)) {
+            $definition = $this->container->getDefinition($service);
+            $class = $definition->getClass();
+
+            if ($class && class_exists($class)) {
+                $reflection = new ReflectionClass($class);
+                $constructor = $reflection->getConstructor();
+                if ($constructor) {
+                    foreach ($constructor->getParameters() as $param) {
+                        $type = $param->getType();
+                        $typeName = null;
+                        if ($type instanceof ReflectionNamedType) {
+                            $typeName = $type->getName();
+                        } elseif ($type instanceof ReflectionUnionType) {
+                            $typeName = implode('|', array_map(
+                                fn ($t) => $t->getName(),
+                                $type->getTypes()
+                            ));
+                        }
+                        $constructorDependencies[] = [
+                            'name' => $param->getName(),
+                            'type' => $typeName,
+                            'isOptional' => $param->isOptional(),
+                        ];
+                    }
+                }
+            }
+        }
+
+        return [
+            'class' => $class ?? null,
+            'interfaces' => $class && class_exists($class) ? array_values(class_implements($class)) : [],
+            'constructor_dependencies' => $constructorDependencies,
+            'dependencies' => $this->getDependencies($service),
+            'bindingHistory' => $this->getBindingHistory($service),
+            'resolved' => $this->resolve($service),
+        ];
     }
 }

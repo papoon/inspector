@@ -23,12 +23,10 @@ $adapterType = $_GET['adapter'] ?? getenv('INSPECTOR_ADAPTER') ?? 'laravel';
 
 if ($adapterType === 'laravel') {
     use Inspector\Adapters\LaravelAdapter;
-    // Use the real Laravel container if available
     $container = function_exists('app') ? app() : new Illuminate\Container\Container();
     $adapter = new LaravelAdapter($container);
 } elseif ($adapterType === 'symfony') {
     use Inspector\Adapters\SymfonyAdapter;
-    // Use the real Symfony container if available
     $container = isset($GLOBALS['kernel']) ? $GLOBALS['kernel']->getContainer() : new Symfony\Component\DependencyInjection\ContainerBuilder();
     $adapter = new SymfonyAdapter($container);
 } elseif ($adapterType === 'psr') {
@@ -47,23 +45,52 @@ if ($adapterType === 'laravel') {
 $inspector = new Inspector($adapter);
 
 $filter = $_GET['filter'] ?? '';
+$filterLower = strtolower($filter);
 $services = $inspector->browseServices();
+
+// Enhanced search: by name, class, or interface
 if ($filter !== '') {
-    $services = array_filter($services, fn($s) => stripos($s, $filter) !== false);
+    $services = array_filter($services, function($s) use ($filterLower, $inspector) {
+        if (stripos($s, $filterLower) !== false) {
+            return true;
+        }
+        $details = $inspector->inspectService($s);
+        if (isset($details['class']) && stripos((string)$details['class'], $filterLower) !== false) {
+            return true;
+        }
+        if (isset($details['interfaces']) && is_array($details['interfaces'])) {
+            foreach ($details['interfaces'] as $iface) {
+                if (stripos((string)$iface, $filterLower) !== false) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    });
 }
 $selectedService = $_GET['service'] ?? null;
 $detail = $selectedService ? $inspector->inspectService($selectedService) : null;
+
+// Helper for highlighting matches
+function highlight($text, $filter) {
+    if (!$filter) return htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+    return preg_replace('/(' . preg_quote($filter, '/') . ')/i', '<mark>$1</mark>', htmlspecialchars($text, ENT_QUOTES, 'UTF-8'));
+}
 ?>
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
     <title>Service Container Inspector</title>
+    <style>
+        mark { background: #ffe066; }
+        .deps { margin-left: 2em; }
+    </style>
 </head>
 <body>
     <h1>Registered Services (<?= htmlspecialchars($adapterType, ENT_QUOTES, 'UTF-8') ?>)</h1>
     <form method="get" style="margin-bottom: 1em;">
-        <input type="text" name="filter" value="<?= htmlspecialchars($filter, ENT_QUOTES, 'UTF-8') ?>" placeholder="Search services..." />
+        <input type="text" name="filter" value="<?= htmlspecialchars($filter, ENT_QUOTES, 'UTF-8') ?>" placeholder="Search by name, class, or interface..." />
         <select name="adapter">
             <option value="laravel" <?= $adapterType === 'laravel' ? 'selected' : '' ?>>Laravel</option>
             <option value="symfony" <?= $adapterType === 'symfony' ? 'selected' : '' ?>>Symfony</option>
@@ -76,16 +103,56 @@ $detail = $selectedService ? $inspector->inspectService($selectedService) : null
     </form>
     <ul>
         <?php foreach ($services as $service): ?>
+            <?php
+                $details = $inspector->inspectService($service);
+                $class = $details['class'] ?? '';
+                $interfaces = $details['interfaces'] ?? [];
+            ?>
             <li>
                 <a href="?<?= http_build_query(['filter' => $filter, 'adapter' => $adapterType, 'service' => $service]) ?>">
-                    <?= htmlspecialchars((string)$service, ENT_QUOTES, 'UTF-8') ?>
+                    <?= highlight((string)$service, $filter) ?>
                 </a>
+                <?php if ($class): ?>
+                    <small>Class: <?= highlight($class, $filter) ?></small>
+                <?php endif; ?>
+                <?php if (!empty($interfaces)): ?>
+                    <small>Interfaces:
+                        <?php foreach ($interfaces as $iface): ?>
+                            <?= highlight($iface, $filter) ?>
+                        <?php endforeach; ?>
+                    </small>
+                <?php endif; ?>
             </li>
         <?php endforeach; ?>
     </ul>
 
     <?php if ($selectedService && $detail): ?>
         <h2>Service Details: <?= htmlspecialchars((string)$selectedService, ENT_QUOTES, 'UTF-8') ?></h2>
+        <?php if (!empty($detail['class'])): ?>
+            <div><strong>Class:</strong> <?= htmlspecialchars($detail['class'], ENT_QUOTES, 'UTF-8') ?></div>
+        <?php endif; ?>
+        <?php if (!empty($detail['interfaces'])): ?>
+            <div><strong>Interfaces:</strong>
+                <ul>
+                    <?php foreach ($detail['interfaces'] as $iface): ?>
+                        <li><?= htmlspecialchars($iface, ENT_QUOTES, 'UTF-8') ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        <?php endif; ?>
+        <?php if (!empty($detail['constructor_dependencies'])): ?>
+            <div><strong>Constructor dependencies:</strong>
+                <ul class="deps">
+                    <?php foreach ($detail['constructor_dependencies'] as $dep): ?>
+                        <li>
+                            <?= htmlspecialchars($dep['name'], ENT_QUOTES, 'UTF-8') ?>:
+                            <?= htmlspecialchars($dep['type'] ?? 'mixed', ENT_QUOTES, 'UTF-8') ?>
+                            <?= $dep['isOptional'] ? '(optional)' : '' ?>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        <?php endif; ?>
         <pre><?= htmlspecialchars(print_r($detail, true), ENT_QUOTES, 'UTF-8') ?></pre>
     <?php endif; ?>
 </body>
