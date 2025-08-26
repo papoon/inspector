@@ -40,9 +40,7 @@ class PsrAdapter implements AdapterInterface
         return [];
     }
 
-    /**
-     * @return array<string>
-     */
+    /** @return array<string, array{concrete: mixed, shared: bool}> */
     public function getBindings(): array
     {
         return [];
@@ -98,7 +96,7 @@ class PsrAdapter implements AdapterInterface
                             $typeName = $type->getName();
                         } elseif ($type instanceof ReflectionUnionType) {
                             $typeName = implode('|', array_map(
-                                fn ($t) => $t->getName(),
+                                fn($t) => $t->getName(),
                                 $type->getTypes()
                             ));
                         }
@@ -121,5 +119,21 @@ class PsrAdapter implements AdapterInterface
             'resolved' => $this->resolve($service),
             'shared' => null, // or false
         ];
+    }
+
+    /**
+     * @param string $service
+     * @return array{
+     *   type: string,
+     *   message: string,
+     *   code: int,
+     *   file: string,
+     *   line: int,
+     *   exception: \Throwable
+     * }|null
+     */
+    public function getResolutionError(string $service): ?array
+    {
+        return null;
     }
 }
