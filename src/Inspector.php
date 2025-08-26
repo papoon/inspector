@@ -2,6 +2,8 @@
 
 namespace Inspector;
 
+use Throwable;
+
 class Inspector
 {
     protected AdapterInterface $adapter;
@@ -44,6 +46,60 @@ class Inspector
             'resolved' => null,
             'shared' => null,
         ], $adapterDetails);
+    }
+
+    /**
+     * @return array<string> List of service names that cannot be resolved
+     */
+    public function findUnresolvableServices(): array
+    {
+        $broken = [];
+        foreach ($this->browseServices() as $service) {
+            try {
+                $this->adapter->resolve($service);
+            } catch (Throwable $e) {
+                $broken[] = $service;
+            }
+        }
+        return $broken;
+    }
+
+    /**
+     * @return array<string, array{
+     *   type: string,
+     *   message: string,
+     *   code: int,
+     *   file: string,
+     *   line: int,
+     *   exception: Throwable
+     * }>
+     */
+    public function findUnresolvableServicesWithDetails(): array
+    {
+        $broken = [];
+        foreach ($this->browseServices() as $service) {
+            $error = null;
+            if (method_exists($this->adapter, 'getResolutionError')) {
+                $error = $this->adapter->getResolutionError($service);
+            } else {
+                try {
+                    $this->adapter->resolve($service);
+                } catch (Throwable $e) {
+                    $error = [
+                        'type' => get_class($e),
+                        'message' => $e->getMessage(),
+                        'code' => $e->getCode(),
+                        'file' => $e->getFile(),
+                        'line' => $e->getLine(),
+                        'exception' => $e,
+                    ];
+                }
+            }
+            if ($error) {
+                $broken[$service] = $error;
+            }
+        }
+        return $broken;
     }
 
     public function getAdapter(): AdapterInterface

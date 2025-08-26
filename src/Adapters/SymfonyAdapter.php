@@ -9,6 +9,7 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use ReflectionClass;
 use ReflectionNamedType;
 use ReflectionUnionType;
+use Throwable;
 
 class SymfonyAdapter implements AdapterInterface
 {
@@ -95,10 +96,10 @@ class SymfonyAdapter implements AdapterInterface
 
     public function resolve(string $service): mixed
     {
-        if ($this->container->has($service)) {
-            return $this->container->get($service);
+        if (!$this->container->has($service)) {
+            return null;
         }
-        return null;
+        return $this->container->get($service);
     }
 
     /** @return bool */
@@ -155,5 +156,32 @@ class SymfonyAdapter implements AdapterInterface
             'resolved' => $this->resolve($service),
             'shared' => $isShared,
         ];
+    }
+
+    /**
+     * @return array{
+     *   type: string,
+     *   message: string,
+     *   code: int,
+     *   file: string,
+     *   line: int,
+     *   exception: Throwable
+     * }|null
+     */
+    public function getResolutionError(string $service): ?array
+    {
+        try {
+            $this->resolve($service);
+            return null;
+        } catch (Throwable $e) {
+            return [
+                'type' => get_class($e),
+                'message' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'exception' => $e,
+            ];
+        }
     }
 }

@@ -156,5 +156,72 @@ function highlight($text, $filter) {
         <?php endif; ?>
         <pre><?= htmlspecialchars(print_r($detail, true), ENT_QUOTES, 'UTF-8') ?></pre>
     <?php endif; ?>
+
+    <?php
+    $broken = $inspector->findUnresolvableServices();
+    if (!empty($broken)) {
+        echo '<h2>Unresolvable Services</h2><ul>';
+        foreach ($broken as $service) {
+            echo '<li>' . htmlspecialchars($service, ENT_QUOTES, 'UTF-8') . '</li>';
+        }
+        echo '</ul>';
+    }
+    ?>
+
+    <?php
+    $brokenDetails = $inspector->findUnresolvableServicesWithDetails();
+    if (!empty($brokenDetails)) {
+        echo '<h2>Unresolvable Services (Detailed)</h2><ul>';
+        foreach ($brokenDetails as $service => $info) {
+            // Adapter filter (if you want to filter by current adapter)
+            if ($adapterFilter && $adapterFilter !== $adapterType) {
+                continue;
+            }
+            // Service name filter
+            if ($serviceFilter && stripos($service, $serviceFilter) === false) {
+                continue;
+            }
+            // Error type/message filter
+            $errorText = $info['type'] . ': ' . $info['message'];
+            if ($errorFilter && stripos($errorText, $errorFilter) === false) {
+                continue;
+            }
+            echo '<li><strong>' . htmlspecialchars($service, ENT_QUOTES, 'UTF-8') . '</strong>: ';
+            echo htmlspecialchars($errorText, ENT_QUOTES, 'UTF-8');
+            echo ' <small>(' . htmlspecialchars($info['file'], ENT_QUOTES, 'UTF-8') . ':' . $info['line'] . ')</small>';
+            if (isset($info['exception']) && $info['exception'] instanceof \Throwable) {
+                echo '<details><summary>Stack trace</summary><pre style="max-height:300px;overflow:auto;">' .
+                    htmlspecialchars($info['exception']->getTraceAsString(), ENT_QUOTES, 'UTF-8') .
+                    '</pre></details>';
+            }
+            echo '</li>';
+        }
+        echo '</ul>';
+    }
+    ?>
+
+    <?php
+    $errorFilter = $_GET['error_filter'] ?? '';
+    $serviceFilter = $_GET['service_filter'] ?? '';
+    $adapterFilter = $_GET['adapter_filter'] ?? $adapterType;
+    ?>
+    <form method="get" style="margin-bottom: 1em;">
+        <input type="text" name="error_filter" value="<?= htmlspecialchars($errorFilter, ENT_QUOTES, 'UTF-8') ?>" placeholder="Filter errors by type or message..." />
+        <input type="text" name="service_filter" value="<?= htmlspecialchars($serviceFilter, ENT_QUOTES, 'UTF-8') ?>" placeholder="Filter by service name..." />
+        <select name="adapter_filter">
+            <option value="laravel" <?= $adapterFilter === 'laravel' ? 'selected' : '' ?>>Laravel</option>
+            <option value="symfony" <?= $adapterFilter === 'symfony' ? 'selected' : '' ?>>Symfony</option>
+            <option value="psr" <?= $adapterFilter === 'psr' ? 'selected' : '' ?>>PSR-11</option>
+        </select>
+        <?php
+        // Preserve other query params
+        foreach ($_GET as $k => $v) {
+            if (!in_array($k, ['error_filter', 'service_filter', 'adapter_filter'])) {
+                echo '<input type="hidden" name="' . htmlspecialchars($k, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($v, ENT_QUOTES, 'UTF-8') . '">';
+            }
+        }
+        ?>
+        <button type="submit">Filter</button>
+    </form>
 </body>
 </html>

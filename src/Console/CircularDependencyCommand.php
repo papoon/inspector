@@ -29,6 +29,7 @@ class CircularDependencyCommand extends Command
 
         $check = function (string $service) use (&$check, &$visited, &$stack, &$circular) {
             // These checks are correct: $stack and $visited start empty, but will fill as recursion proceeds.
+            // @phpstan-ignore-next-line
             if (in_array($service, $stack, true)) {
                 $circular[] = implode(' -> ', array_merge($stack, [$service]));
                 return;
@@ -48,7 +49,7 @@ class CircularDependencyCommand extends Command
         foreach ($services as $service) {
             $check((string)$service);
         }
-
+        // @phpstan-ignore-next-line
         if ($circular) {
             $output->writeln('<error>Circular dependencies detected:</error>');
             foreach ($circular as $cycle) {

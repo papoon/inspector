@@ -12,6 +12,8 @@ class InspectorTest extends TestCase
     public function testInspectServiceReturnsArrayWithKeys(): void
     {
         $container = new Container();
+        // Register a dummy service so it can be resolved
+        $container->bind('test', fn () => 'dummy');
         $adapter = new LaravelAdapter($container);
         $inspector = new Inspector($adapter);
 

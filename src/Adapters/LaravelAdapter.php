@@ -93,11 +93,12 @@ class LaravelAdapter implements AdapterInterface
         return [];
     }
 
-    public function resolve(string $service): mixed
+    public function resolve(string $service)
     {
-        return $this->container->bound($service)
-            ? $this->container->make($service)
-            : null;
+        if (!$this->container->bound($service)) {
+            return null;
+        }
+        return $this->container->make($service);
     }
 
     public function inspectService(string $service): array
@@ -170,5 +171,32 @@ class LaravelAdapter implements AdapterInterface
             return $service;
         }
         return null;
+    }
+
+    /**
+     * @return array{
+     *   type: string,
+     *   message: string,
+     *   code: int,
+     *   file: string,
+     *   line: int,
+     *   exception: Throwable
+     * }|null
+     */
+    public function getResolutionError(string $service): ?array
+    {
+        try {
+            $this->resolve($service);
+            return null;
+        } catch (Throwable $e) {
+            return [
+                'type' => get_class($e),
+                'message' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'exception' => $e,
+            ];
+        }
     }
 }
