@@ -21,4 +21,11 @@ interface AdapterInterface
      * }
      */
     public function inspectService(string $service): array;
+
+    /**
+     * Attempt to resolve a service. Returns the instance or null if not resolvable.
+     * @param string $service
+     * @return mixed|null
+     */
+    public function resolve(string $service);
 }
