@@ -2,6 +2,8 @@
 
 Framework-agnostic tool to inspect and debug PHP service containers.
 
+[![Coverage Status](https://codecov.io/gh/papoon/inspector/branch/main/graph/badge.svg)](https://codecov.io/gh/papoon/inspector)
+
 ## Installation
 
 ```bash
