@@ -15,6 +15,15 @@ use Throwable;
 class LaravelAdapter implements AdapterInterface
 {
     protected Container $container;
+    /**
+     * @var array<int, array{
+     *   timestamp: float,
+     *   type: string,
+     *   action: string,
+     *   service: string,
+     *   details: mixed
+     * }>
+     */
     protected array $mutations = [];
     protected ?MutationEventDispatcher $mutationDispatcher = null;
 
@@ -252,7 +261,7 @@ class LaravelAdapter implements AdapterInterface
 
     public function getTaggedServices(): array
     {
-        $reflection = new \ReflectionClass($this->container);
+        $reflection = new ReflectionClass($this->container);
         if ($reflection->hasProperty('tags')) {
             $property = $reflection->getProperty('tags');
             $property->setAccessible(true);
@@ -268,6 +277,15 @@ class LaravelAdapter implements AdapterInterface
         $this->mutationDispatcher = $dispatcher;
     }
 
+    /**
+     * @param array{
+     *   timestamp: float,
+     *   type: string,
+     *   action: string,
+     *   service: string,
+     *   details: mixed
+     * } $mutation
+     */
     protected function trackMutation(array $mutation): void
     {
         $this->mutations[] = $mutation;
@@ -276,7 +294,7 @@ class LaravelAdapter implements AdapterInterface
         }
     }
 
-    public function bind(string $abstract, $concrete = null, bool $shared = false)
+    public function bind(string $abstract, mixed $concrete = null, bool $shared = false): void
     {
         $this->container->bind($abstract, $concrete, $shared);
         $mutation = [
@@ -289,7 +307,7 @@ class LaravelAdapter implements AdapterInterface
         $this->trackMutation($mutation);
     }
 
-    public function unbind(string $abstract)
+    public function unbind(string $abstract): void
     {
         unset($this->container->getBindings()[$abstract]);
         $mutation = [
@@ -302,7 +320,7 @@ class LaravelAdapter implements AdapterInterface
         $this->trackMutation($mutation);
     }
 
-    public function alias(string $abstract, string $alias)
+    public function alias(string $abstract, string $alias): void
     {
         $this->container->alias($abstract, $alias);
         $mutation = [
@@ -315,9 +333,16 @@ class LaravelAdapter implements AdapterInterface
         $this->trackMutation($mutation);
     }
 
-    public function unalias(string $alias)
+    public function unalias(string $alias): void
     {
-        unset($this->container->getAliases()[$alias]);
+        $reflection = new ReflectionClass($this->container);
+        if ($reflection->hasProperty('aliases')) {
+            $property = $reflection->getProperty('aliases');
+            $property->setAccessible(true);
+            $aliases = $property->getValue($this->container);
+            unset($aliases[$alias]);
+            $property->setValue($this->container, $aliases);
+        }
         $mutation = [
             'timestamp' => microtime(true),
             'type' => 'alias',

@@ -15,7 +15,18 @@ use Throwable;
 class SymfonyAdapter implements AdapterInterface
 {
     protected ContainerBuilder $container;
+
+    /**
+     * @var array<int, array{
+     *   timestamp: float,
+     *   type: string,
+     *   action: string,
+     *   service: string,
+     *   details: mixed
+     * }>
+     */
     protected array $mutations = [];
+
     protected ?MutationEventDispatcher $mutationDispatcher = null;
 
     public function __construct(ContainerBuilder $container)
@@ -240,6 +251,15 @@ class SymfonyAdapter implements AdapterInterface
         $this->mutationDispatcher = $dispatcher;
     }
 
+    /**
+     * @param array{
+     *   timestamp: float,
+     *   type: string,
+     *   action: string,
+     *   service: string,
+     *   details: mixed
+     * } $mutation
+     */
     protected function trackMutation(array $mutation): void
     {
         $this->mutations[] = $mutation;
@@ -248,7 +268,7 @@ class SymfonyAdapter implements AdapterInterface
         }
     }
 
-    public function setDefinition(string $id, $definition)
+    public function setDefinition(string $id, mixed $definition): void
     {
         $this->container->setDefinition($id, $definition);
         $mutation = [
@@ -261,7 +281,7 @@ class SymfonyAdapter implements AdapterInterface
         $this->trackMutation($mutation);
     }
 
-    public function removeDefinition(string $id)
+    public function removeDefinition(string $id): void
     {
         $this->container->removeDefinition($id);
         $mutation = [
