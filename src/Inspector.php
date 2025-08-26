@@ -115,4 +115,12 @@ class Inspector
     {
         return $this->adapter->getTaggedServices();
     }
+
+    /**
+     * @return array<int, array{timestamp: float, type: string, action: string, service: string, details: mixed}>
+     */
+    public function getMutations(): array
+    {
+        return $this->adapter->getMutations();
+    }
 }

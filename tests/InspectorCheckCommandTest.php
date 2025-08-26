@@ -10,6 +10,11 @@ use Inspector\Console\InspectorCheckCommand;
 
 class DummyAdapter implements \Inspector\AdapterInterface
 {
+    public function getMutations(): array
+    {
+        return [];
+    }
+
     public function getTaggedServices(): array
     {
         return [];
@@ -60,7 +65,7 @@ class DummyAdapter implements \Inspector\AdapterInterface
         ];
     }
 
-    public function resolve(string $service)
+    public function resolve(string $service): mixed
     {
         return null;
     }
