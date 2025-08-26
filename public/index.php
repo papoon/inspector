@@ -119,6 +119,48 @@ if (isset($_GET['export'])) {
         }
         exit;
     }
+    if ($exportType === 'graphviz') {
+        // Graphviz DOT format
+        header('Content-Type: text/plain');
+        echo "digraph G {\n";
+        foreach ($map as $name => $detail) {
+            echo '  "' . addslashes($name) . '"';
+            if (!empty($detail['constructor_dependencies'])) {
+                echo ' -> {' . implode(', ', array_map(fn($d) => '"' . addslashes($d['name']) . '"', $detail['constructor_dependencies'])) . '}';
+            }
+            echo ";\n";
+        }
+        echo "}\n";
+        exit;
+    }
+    if ($exportType === 'd3') {
+        // D3.js JSON format
+        header('Content-Type: application/json');
+        $nodes = [];
+        $links = [];
+        $index = 0;
+        foreach ($map as $name => $detail) {
+            $nodes[] = ['id' => $name];
+            if (!empty($detail['constructor_dependencies'])) {
+                foreach ($detail['constructor_dependencies'] as $dep) {
+                    $links[] = ['source' => $name, 'target' => $dep['name']];
+                }
+            }
+        }
+        // Ensure unique IDs for nodes
+        $nodes = array_map(function ($node) use (&$index) {
+            $node['id'] = $index++;
+            return $node;
+        }, $nodes);
+        // Remap links to use numeric IDs
+        $links = array_map(function ($link) use ($nodes) {
+            $sourceIndex = array_search($link['source'], array_column($nodes, 'id'));
+            $targetIndex = array_search($link['target'], array_column($nodes, 'id'));
+            return ['source' => $sourceIndex, 'target' => $targetIndex];
+        }, $links);
+        echo json_encode(['nodes' => $nodes, 'links' => $links], JSON_PRETTY_PRINT);
+        exit;
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -155,6 +197,8 @@ if (isset($_GET['export'])) {
         <button type="submit" name="export" value="json">Export JSON</button>
         <button type="submit" name="export" value="yaml">Export YAML</button>
         <button type="submit" name="export" value="md">Export Markdown</button>
+        <button type="submit" name="export" value="graphviz">Export Graphviz</button>
+        <button type="submit" name="export" value="d3">Export D3.js JSON</button>
     </form>
     <ul>
         <?php foreach ($services as $service): ?>
@@ -310,6 +354,90 @@ if (isset($_GET['export'])) {
         }
     }
     ?>
+
+    <h2>Dependency Graph (D3.js)</h2>
+    <div id="graph" style="width:100%;height:600px;border:1px solid #ccc;"></div>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script>
+    fetch('?export=d3')
+        .then(response => response.json())
+        .then(data => {
+            const width = document.getElementById('graph').clientWidth;
+            const height = document.getElementById('graph').clientHeight;
+            const svg = d3.select("#graph").append("svg")
+                .attr("width", width)
+                .attr("height", height);
+
+            const simulation = d3.forceSimulation(data.nodes)
+                .force("link", d3.forceLink(data.links).id(d => d.id).distance(100))
+                .force("charge", d3.forceManyBody().strength(-300))
+                .force("center", d3.forceCenter(width / 2, height / 2));
+
+            const link = svg.append("g")
+                .attr("stroke", "#999")
+                .attr("stroke-opacity", 0.6)
+                .selectAll("line")
+                .data(data.links)
+                .join("line")
+                .attr("stroke-width", 2);
+
+            const node = svg.append("g")
+                .attr("stroke", "#fff")
+                .attr("stroke-width", 1.5)
+                .selectAll("circle")
+                .data(data.nodes)
+                .join("circle")
+                .attr("r", 10)
+                .attr("fill", "#69b3a2")
+                .call(drag(simulation));
+
+            const label = svg.append("g")
+                .selectAll("text")
+                .data(data.nodes)
+                .join("text")
+                .text(d => d.id)
+                .attr("font-size", 12)
+                .attr("dx", 12)
+                .attr("dy", ".35em");
+
+            simulation.on("tick", () => {
+                link
+                    .attr("x1", d => d.source.x)
+                    .attr("y1", d => d.source.y)
+                    .attr("x2", d => d.target.x)
+                    .attr("y2", d => d.target.y);
+
+                node
+                    .attr("cx", d => d.x)
+                    .attr("cy", d => d.y);
+
+                label
+                    .attr("x", d => d.x)
+                    .attr("y", d => d.y);
+            });
+
+            function drag(simulation) {
+                function dragstarted(event, d) {
+                    if (!event.active) simulation.alphaTarget(0.3).restart();
+                    d.fx = d.x;
+                    d.fy = d.y;
+                }
+                function dragged(event, d) {
+                    d.fx = event.x;
+                    d.fy = event.y;
+                }
+                function dragended(event, d) {
+                    if (!event.active) simulation.alphaTarget(0);
+                    d.fx = null;
+                    d.fy = null;
+                }
+                return d3.drag()
+                    .on("start", dragstarted)
+                    .on("drag", dragged)
+                    .on("end", dragended);
+            }
+        });
+    </script>
 </body>
 
 </html>
