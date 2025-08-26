@@ -15,7 +15,6 @@ class PsrAdapter implements AdapterInterface
 {
     protected ContainerInterface $container;
 
-    
     public function getTaggedServices(): array
     {
         // PSR containers do not expose tags, so return empty
@@ -161,5 +160,15 @@ class PsrAdapter implements AdapterInterface
     public function getResolutionError(string $service): ?array
     {
         return null;
+    }
+
+    public function setMutationDispatcher(\Inspector\MutationEventDispatcher $dispatcher): void
+    {
+        // No-op for PSR-11 containers
+    }
+
+    public function getMutations(): array
+    {
+        return [];
     }
 }

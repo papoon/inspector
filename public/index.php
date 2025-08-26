@@ -438,6 +438,85 @@ if (isset($_GET['export'])) {
             }
         });
     </script>
+
+    <?php
+    $mutations = $inspector->getMutations();
+    $typeFilter = $_GET['mutation_type'] ?? '';
+    $actionFilter = $_GET['mutation_action'] ?? '';
+    $serviceFilter = $_GET['mutation_service'] ?? '';
+
+    if ($typeFilter || $actionFilter || $serviceFilter) {
+        $mutations = array_filter($mutations, function ($mutation) use ($typeFilter, $actionFilter, $serviceFilter) {
+            if ($typeFilter && stripos($mutation['type'], $typeFilter) === false) return false;
+            if ($actionFilter && stripos($mutation['action'], $actionFilter) === false) return false;
+            if ($serviceFilter && stripos($mutation['service'], $serviceFilter) === false) return false;
+            return true;
+        });
+    }
+
+    if (!empty($mutations)) {
+        echo '<h2>Container Mutations</h2>';
+        echo '<table id="mutation-table" border="1" cellpadding="4" style="width:100%;max-width:900px;">';
+        echo '<tr><th>Time</th><th>Type</th><th>Action</th><th>Service</th><th>Details</th></tr>';
+        foreach ($mutations as $mutation) {
+            echo '<tr>';
+            echo '<td>' . date('H:i:s', (int)$mutation['timestamp']) . '</td>';
+            echo '<td>' . htmlspecialchars($mutation['type'], ENT_QUOTES, 'UTF-8') . '</td>';
+            echo '<td>' . htmlspecialchars($mutation['action'], ENT_QUOTES, 'UTF-8') . '</td>';
+            echo '<td>' . htmlspecialchars($mutation['service'], ENT_QUOTES, 'UTF-8') . '</td>';
+            echo '<td><pre style="margin:0;">' . htmlspecialchars(print_r($mutation['details'], true), ENT_QUOTES, 'UTF-8') . '</pre></td>';
+            echo '</tr>';
+        }
+        echo '</table>';
+    }
+    ?>
+
+    <?php
+    <form method="get" style="margin-bottom: 1em;">
+        <input type="text" name="mutation_type" value="<?= htmlspecialchars($_GET['mutation_type'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Type (binding, alias, resolve)" />
+        <input type="text" name="mutation_action" value="<?= htmlspecialchars($_GET['mutation_action'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Action (added, removed, resolved)" />
+        <input type="text" name="mutation_service" value="<?= htmlspecialchars($_GET['mutation_service'] ?? '', ENT_QUOTES, 'UTF-8') ?>" placeholder="Service name" />
+        <button type="submit">Filter Mutations</button>
+        <?php
+        // Preserve other query params
+        foreach ($_GET as $k => $v) {
+            if (!in_array($k, ['mutation_type', 'mutation_action', 'mutation_service'])) {
+                echo '<input type="hidden" name="' . htmlspecialchars($k, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($v, ENT_QUOTES, 'UTF-8') . '">';
+            }
+        }
+        ?>
+    </form>
+    ?>
+
+    <?php
+    if (isset($_GET['ajax']) && $_GET['ajax'] === 'mutations') {
+        $mutations = $inspector->getMutations();
+        header('Content-Type: application/json');
+        echo json_encode($mutations);
+        exit;
+    }
+    ?>
+    <script>
+function renderMutations(mutations) {
+    let html = '<tr><th>Time</th><th>Type</th><th>Action</th><th>Service</th><th>Details</th></tr>';
+    for (const mutation of mutations) {
+        html += '<tr>'
+            + '<td>' + new Date(mutation.timestamp * 1000).toLocaleTimeString() + '</td>'
+            + '<td>' + mutation.type + '</td>'
+            + '<td>' + mutation.action + '</td>'
+            + '<td>' + mutation.service + '</td>'
+            + '<td><pre style="margin:0;">' + JSON.stringify(mutation.details, null, 2) + '</pre></td>'
+            + '</tr>';
+    }
+    document.getElementById('mutation-table').innerHTML = html;
+}
+
+setInterval(function() {
+    fetch('?ajax=mutations')
+        .then(response => response.json())
+        .then(data => renderMutations(data));
+}, 3000);
+</script>
 </body>
 
 </html>

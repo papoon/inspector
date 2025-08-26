@@ -70,4 +70,10 @@ interface AdapterInterface
      * @return array<string, array<string>>  // ['tag' => [service1, service2, ...]]
      */
     public function getTaggedServices(): array;
+
+    /**
+     * Returns a list of mutations (bindings/aliases added/removed) since startup.
+     * @return array<int, array{timestamp: float, type: string, action: string, service: string, details: mixed}>
+     */
+    public function getMutations(): array;
 }
