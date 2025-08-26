@@ -3,8 +3,13 @@
 declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
-use Inspector\Adapters\LaravelAdapter;
 use Illuminate\Container\Container;
+use Inspector\Adapters\LaravelAdapter;
+
+class DummyLaravelDep
+{
+    public function __construct(string $foo, int $bar = 42) {}
+}
 
 class LaravelAdapterTest extends TestCase
 {
@@ -83,5 +88,27 @@ class LaravelAdapterTest extends TestCase
 
         $resolved = $adapter->resolve('not_bound');
         $this->assertNull($resolved);
+    }
+
+    public function testInspectServiceReturnsConstructorDependencies()
+    {
+        $container = new Container();
+        // Bind using a factory to ensure correct instantiation
+        $container->bind('dummy', function () {
+            return new DummyLaravelDep('foo', 42);
+        });
+        $adapter = new LaravelAdapter($container);
+
+        $details = $adapter->inspectService('dummy');
+        $deps = $details['constructor_dependencies'] ?? [];
+
+        $this->assertNotEmpty($deps);
+        $this->assertEquals('foo', $deps[0]['name']);
+        $this->assertEquals('string', $deps[0]['type']);
+        $this->assertFalse($deps[0]['isOptional']);
+
+        $this->assertEquals('bar', $deps[1]['name']);
+        $this->assertEquals('int', $deps[1]['type']);
+        $this->assertTrue($deps[1]['isOptional']);
     }
 }

@@ -65,4 +65,37 @@ class PsrAdapter implements AdapterInterface
     {
         return get_class($this->container);
     }
+
+    public function inspectService(string $service): array
+    {
+        $class = null;
+        $constructorDependencies = [];
+
+        // Try to resolve the service and get its class
+        if ($this->container->has($service)) {
+            $instance = $this->container->get($service);
+            if (is_object($instance)) {
+                $class = get_class($instance);
+
+                $reflection = new \ReflectionClass($class);
+                $constructor = $reflection->getConstructor();
+                if ($constructor) {
+                    foreach ($constructor->getParameters() as $param) {
+                        $type = $param->getType();
+                        $constructorDependencies[] = [
+                            'name' => $param->getName(),
+                            'type' => $type ? $type->getName() : null,
+                            'isOptional' => $param->isOptional(),
+                        ];
+                    }
+                }
+            }
+        }
+
+        return [
+            'class' => $class,
+            'constructor_dependencies' => $constructorDependencies,
+            // ...add other details as needed...
+        ];
+    }
 }

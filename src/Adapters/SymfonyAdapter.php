@@ -106,4 +106,36 @@ class SymfonyAdapter implements AdapterInterface
         }
         return $this->container->getDefinition($service)->isAutowired();
     }
+
+    public function inspectService(string $service): array
+    {
+        $class = null;
+        $constructorDependencies = [];
+
+        if ($this->container->hasDefinition($service)) {
+            $definition = $this->container->getDefinition($service);
+            $class = $definition->getClass();
+
+            if ($class && class_exists($class)) {
+                $reflection = new \ReflectionClass($class);
+                $constructor = $reflection->getConstructor();
+                if ($constructor) {
+                    foreach ($constructor->getParameters() as $param) {
+                        $type = $param->getType();
+                        $constructorDependencies[] = [
+                            'name' => $param->getName(),
+                            'type' => $type ? $type->getName() : null,
+                            'isOptional' => $param->isOptional(),
+                        ];
+                    }
+                }
+            }
+        }
+
+        return [
+            'class' => $class,
+            'constructor_dependencies' => $constructorDependencies,
+            // ...add other details as needed...
+        ];
+    }
 }

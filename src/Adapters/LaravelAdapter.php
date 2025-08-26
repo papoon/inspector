@@ -96,4 +96,59 @@ class LaravelAdapter implements AdapterInterface
             ? $this->container->make($service)
             : null;
     }
+
+    public function inspectService(string $service): array
+    {
+        $class = $this->getClassForService($service); // Implement this per adapter
+
+        $dependencies = [];
+        if ($class && class_exists($class)) {
+            $reflection = new \ReflectionClass($class);
+            $constructor = $reflection->getConstructor();
+            if ($constructor) {
+                foreach ($constructor->getParameters() as $param) {
+                    $type = $param->getType();
+                    $dependencies[] = [
+                        'name' => $param->getName(),
+                        'type' => $type ? $type->getName() : null,
+                        'isOptional' => $param->isOptional(),
+                    ];
+                }
+            }
+        }
+
+        return [
+            'class' => $class,
+            'constructor_dependencies' => $dependencies,
+        ];
+    }
+
+    /**
+     * Attempt to resolve the class name for a given service.
+     */
+    protected function getClassForService(string $service): ?string
+    {
+        // Try to resolve the concrete from the container
+        if ($this->container->bound($service)) {
+            $concrete = $this->container->getBindings()[$service]['concrete'] ?? null;
+            if (is_string($concrete) && class_exists($concrete)) {
+                return $concrete;
+            }
+            // If concrete is a closure, try to resolve and get its class
+            try {
+                $instance = $this->container->make($service);
+                if (is_object($instance)) {
+                    return get_class($instance);
+                }
+            } catch (\Throwable $e) {
+                // Could not resolve, return null
+                return null;
+            }
+        }
+        // If not bound, maybe it's a class name itself
+        if (class_exists($service)) {
+            return $service;
+        }
+        return null;
+    }
 }

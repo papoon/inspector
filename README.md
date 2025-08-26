@@ -5,20 +5,57 @@ Framework-agnostic tool to inspect and debug PHP service containers.
 ## Installation
 
 ```bash
-composer install
+composer require papoon/inspector
 ```
 
 ## Usage
 
 ### Web Dashboard
 
-Start the built-in PHP server:
+#### How to Access in Laravel, Symfony, or Vanilla PHP
 
-```bash
-php -S 0.0.0.0:8080 -t public
+This package provides a web dashboard via `public/index.php` that works with Laravel, Symfony, or any PSR-11 compatible container.
+
+**Steps:**
+
+1. **Expose the dashboard:**
+   - Copy or symlink `vendor/papoon/inspector/public/index.php` to your project's `public/inspector.php` (or any desired location).
+   - Example for Laravel:
+     ```bash
+     cp vendor/papoon/inspector/public/index.php public/inspector.php
+     ```
+
+2. **Visit the dashboard in your browser:**
+   ```
+   http://localhost:8000/inspector.php
+   ```
+
+3. **Adapter selection:**
+   - Use the dropdown on the dashboard to switch between Laravel, Symfony, or PSR-11 containers.
+   - The dashboard auto-detects the real Laravel or Symfony container for full introspection.
+   - For PSR-11, configure your container in `config/container.php` (see below).
+
+4. **Search/filter services:**
+   - Use the search box to filter services by name.
+
+#### PSR-11 Container Configuration
+
+If you want to use a PSR-11 compatible container, create or edit `config/container.php` in your project root:
+
+```php
+<?php
+
+return [
+    'psr' => [
+        'class' => \Your\Psr\Container::class, // Fully qualified class name
+        'args' => [
+            // Constructor arguments for your container, if any
+        ],
+    ],
+];
 ```
 
-Visit [http://localhost:8080](http://localhost:8080) to browse and inspect services.
+The dashboard will automatically use your custom config if present.
 
 ---
 
@@ -83,75 +120,22 @@ php artisan services:trace <service>
 
 ## Features
 
-- **List all registered services**
-- **Inspect individual service details**
-- **Filter/search services by name**
-- **Output results in JSON format for CI integration**
-- **List service tags (Laravel/Symfony)**
-- **List contextual bindings (Laravel)**
-- **List container parameters (Symfony)**
-- **Check autowiring status (Symfony)**
-- **Show service dependency graph**
-- **Detect circular dependencies**
-- **Trace service resolution**
-- **Works with Laravel, Symfony, and any PSR-11 compatible container**
-
----
-
-## Container Configuration
-
-This package supports Laravel, Symfony, and any PSR-11 compatible container.
-
-### Laravel
-
-No configuration needed if used inside a Laravel app. The inspector will use the real Laravel container via `app()`.
-
-### Symfony
-
-No configuration needed if used inside a Symfony app. The inspector will use the real Symfony container via `$GLOBALS['kernel']->getContainer()`.
-
-### PSR-11
-
-To use a PSR-11 compatible container, create a config file at `config/container.php`:
-
-```php
-<?php
-
-return [
-    'psr' => [
-        'class' => \Your\Psr\Container::class, // Fully qualified class name
-        'args' => [
-            // Constructor arguments for your container, if any
-        ],
-    ],
-];
-```
-
-Then select "PSR-11" in the dashboard or pass `adapter=psr` as a query parameter:
-
-```
-http://localhost:8080/?adapter=psr
-```
-
-If your container requires additional setup, do it in the config file or modify `public/index.php` as needed.
-
----
-
-### Custom Container Configuration
-
-You can place your `config/container.php` in your project root or use the default provided by this package.  
-The inspector will automatically use your custom config if present.
-
-Example location:
-```
-your-project/config/container.php
-```
+- List all registered services
+- Inspect individual service details
+- Filter/search services by name
+- Output results in JSON format for CI integration
+- List service tags (Laravel/Symfony)
+- List contextual bindings (Laravel)
+- List container parameters (Symfony)
+- Check autowiring status (Symfony)
+- Show service dependency graph
+- Detect circular dependencies
+- Trace service resolution
+- Works with Laravel, Symfony, and any PSR-11 compatible container
 
 ---
 
 ## Testing
-
-Run PHPUnit tests:
 
 ```bash
 vendor/bin/phpunit
@@ -161,15 +145,8 @@ vendor/bin/phpunit
 
 ## Code Style & Static Analysis
 
-Format code with PHP CS Fixer:
-
 ```bash
 vendor/bin/php-cs-fixer fix
-```
-
-Run static analysis with PHPStan:
-
-```bash
 vendor/bin/phpstan analyse
 ```
 
