@@ -8,7 +8,7 @@ use Inspector\Adapters\LaravelAdapter;
 
 class DummyLaravelDep
 {
-    public function __construct(string $foo, int $bar = 42) {}
+    public function __construct(public string $foo, public int $bar = 42) {}
 }
 
 class LaravelAdapterTest extends TestCase
@@ -90,7 +90,7 @@ class LaravelAdapterTest extends TestCase
         $this->assertNull($resolved);
     }
 
-    public function testInspectServiceReturnsConstructorDependencies()
+    public function testInspectServiceReturnsConstructorDependencies(): void
     {
         $container = new Container();
         // Bind using a factory to ensure correct instantiation
@@ -100,7 +100,7 @@ class LaravelAdapterTest extends TestCase
         $adapter = new LaravelAdapter($container);
 
         $details = $adapter->inspectService('dummy');
-        $deps = $details['constructor_dependencies'] ?? [];
+        $deps = $details['constructor_dependencies'];
 
         $this->assertNotEmpty($deps);
         $this->assertEquals('foo', $deps[0]['name']);

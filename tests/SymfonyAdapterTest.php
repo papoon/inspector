@@ -9,7 +9,7 @@ use Inspector\Adapters\SymfonyAdapter;
 
 class DummySymfonyDep
 {
-    public function __construct(string $foo, int $bar = 42) {}
+    public function __construct(public string $foo, public int $bar = 42) {}
 }
 
 class SymfonyAdapterTest extends TestCase
@@ -100,16 +100,17 @@ class SymfonyAdapterTest extends TestCase
         $this->assertNull($resolved);
     }
 
-    public function testInspectServiceReturnsConstructorDependencies()
+    public function testInspectServiceReturnsConstructorDependencies(): void
     {
         $container = new ContainerBuilder();
         $def = new Definition(DummySymfonyDep::class);
+        $def->setArguments(['foo', 42]);
         $container->setDefinition('dummy', $def);
 
         $adapter = new SymfonyAdapter($container);
 
         $details = $adapter->inspectService('dummy');
-        $deps = $details['constructor_dependencies'] ?? [];
+        $deps = $details['constructor_dependencies'];
 
         $this->assertNotEmpty($deps);
         $this->assertEquals('foo', $deps[0]['name']);

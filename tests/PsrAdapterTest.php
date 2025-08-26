@@ -7,7 +7,7 @@ use Inspector\Adapters\PsrAdapter;
 
 class DummyPsrDep
 {
-    public function __construct(string $foo, int $bar = 42) {}
+    public function __construct(public string $foo, public int $bar = 42) {}
 }
 
 class SimplePsrContainer implements ContainerInterface
@@ -27,13 +27,13 @@ class SimplePsrContainer implements ContainerInterface
 
 class PsrAdapterTest extends TestCase
 {
-    public function testInspectServiceReturnsConstructorDependencies()
+    public function testInspectServiceReturnsConstructorDependencies(): void
     {
         $container = new SimplePsrContainer();
         $adapter = new PsrAdapter($container);
 
         $details = $adapter->inspectService('dummy');
-        $deps = $details['constructor_dependencies'] ?? [];
+        $deps = $details['constructor_dependencies'];
 
         $this->assertNotEmpty($deps);
         $this->assertEquals('foo', $deps[0]['name']);
@@ -45,3 +45,5 @@ class PsrAdapterTest extends TestCase
         $this->assertTrue($deps[1]['isOptional']);
     }
 }
+
+class NotFoundException extends \Exception {}

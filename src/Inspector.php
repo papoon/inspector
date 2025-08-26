@@ -21,18 +21,27 @@ class Inspector
 
     /**
      * @return array{
-     *     dependencies: array<string>,
-     *     bindingHistory: array<string>,
-     *     resolved: mixed
+     *   class?: string|null,
+     *   interfaces?: array<string>,
+     *   constructor_dependencies?: array<array{name: string, type: string|null, isOptional: bool}>,
+     *   dependencies: array<string>,
+     *   bindingHistory: array<string>,
+     *   resolved: mixed
      * }
      */
     public function inspectService(string $service): array
     {
-        return [
-            'dependencies' => $this->adapter->getDependencies($service),
-            'bindingHistory' => $this->adapter->getBindingHistory($service),
-            'resolved' => $this->adapter->resolve($service),
-        ];
+        $adapterDetails = $this->adapter->inspectService($service);
+
+        // Always provide all keys, even if missing from adapter
+        return array_merge([
+            'class' => null,
+            'interfaces' => [],
+            'constructor_dependencies' => [],
+            'dependencies' => [],
+            'bindingHistory' => [],
+            'resolved' => null,
+        ], $adapterDetails);
     }
 
     public function getAdapter(): AdapterInterface

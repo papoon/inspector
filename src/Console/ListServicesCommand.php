@@ -42,11 +42,11 @@ class ListServicesCommand extends Command
                     return true;
                 }
                 // Match by class
-                if (isset($details['class']) && stripos((string)$details['class'], $filterLower) !== false) {
+                if (!empty($details['class']) && stripos((string)$details['class'], $filterLower) !== false) {
                     return true;
                 }
                 // Match by interfaces
-                if (isset($details['interfaces']) && is_array($details['interfaces'])) {
+                if (!empty($details['interfaces'])) {
                     foreach ($details['interfaces'] as $iface) {
                         if (stripos((string)$iface, $filterLower) !== false) {
                             return true;

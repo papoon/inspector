@@ -99,7 +99,7 @@ class LaravelAdapter implements AdapterInterface
 
     public function inspectService(string $service): array
     {
-        $class = $this->getClassForService($service); // Implement this per adapter
+        $class = $this->getClassForService($service);
 
         $dependencies = [];
         if ($class && class_exists($class)) {
@@ -108,9 +108,18 @@ class LaravelAdapter implements AdapterInterface
             if ($constructor) {
                 foreach ($constructor->getParameters() as $param) {
                     $type = $param->getType();
+                    $typeName = null;
+                    if ($type instanceof \ReflectionNamedType) {
+                        $typeName = $type->getName();
+                    } elseif ($type instanceof \ReflectionUnionType) {
+                        $typeName = implode('|', array_map(
+                            fn($t) => $t->getName(),
+                            $type->getTypes()
+                        ));
+                    }
                     $dependencies[] = [
                         'name' => $param->getName(),
-                        'type' => $type ? $type->getName() : null,
+                        'type' => $typeName,
                         'isOptional' => $param->isOptional(),
                     ];
                 }
@@ -118,8 +127,12 @@ class LaravelAdapter implements AdapterInterface
         }
 
         return [
-            'class' => $class,
+            'class' => $class ?? null,
+            'interfaces' => $class && class_exists($class) ? array_values(class_implements($class)) : [],
             'constructor_dependencies' => $dependencies,
+            'dependencies' => $this->getDependencies($service),
+            'bindingHistory' => $this->getBindingHistory($service),
+            'resolved' => $this->resolve($service),
         ];
     }
 

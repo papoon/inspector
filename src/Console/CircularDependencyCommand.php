@@ -27,7 +27,8 @@ class CircularDependencyCommand extends Command
         $stack = [];
         $circular = [];
 
-        $check = function ($service) use (&$check, &$visited, &$stack, &$circular) {
+        $check = function (string $service) use (&$check, &$visited, &$stack, &$circular) {
+            // These checks are correct: $stack and $visited start empty, but will fill as recursion proceeds.
             if (in_array($service, $stack, true)) {
                 $circular[] = implode(' -> ', array_merge($stack, [$service]));
                 return;
@@ -45,7 +46,7 @@ class CircularDependencyCommand extends Command
         };
 
         foreach ($services as $service) {
-            $check($service);
+            $check((string)$service);
         }
 
         if ($circular) {

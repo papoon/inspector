@@ -29,27 +29,35 @@ class PsrAdapter implements AdapterInterface
         return [];
     }
 
+    /**
+     * @return array<string>
+     */
     public function getAliases(): array
     {
-        // No standard way in PSR-11
         return [];
     }
 
+    /**
+     * @return array<string>
+     */
     public function getBindings(): array
     {
-        // No standard way in PSR-11
         return [];
     }
 
+    /**
+     * @return array<string>
+     */
     public function getDependencies(string $service): array
     {
-        // No standard way in PSR-11
         return [];
     }
 
+    /**
+     * @return array<string>
+     */
     public function getBindingHistory(string $service): array
     {
-        // No standard way in PSR-11
         return [];
     }
 
@@ -82,9 +90,18 @@ class PsrAdapter implements AdapterInterface
                 if ($constructor) {
                     foreach ($constructor->getParameters() as $param) {
                         $type = $param->getType();
+                        $typeName = null;
+                        if ($type instanceof \ReflectionNamedType) {
+                            $typeName = $type->getName();
+                        } elseif ($type instanceof \ReflectionUnionType) {
+                            $typeName = implode('|', array_map(
+                                fn($t) => $t->getName(),
+                                $type->getTypes()
+                            ));
+                        }
                         $constructorDependencies[] = [
                             'name' => $param->getName(),
-                            'type' => $type ? $type->getName() : null,
+                            'type' => $typeName,
                             'isOptional' => $param->isOptional(),
                         ];
                     }
@@ -93,9 +110,12 @@ class PsrAdapter implements AdapterInterface
         }
 
         return [
-            'class' => $class,
+            'class' => $class ?? null,
+            'interfaces' => $class && class_exists($class) ? array_values(class_implements($class)) : [],
             'constructor_dependencies' => $constructorDependencies,
-            // ...add other details as needed...
+            'dependencies' => $this->getDependencies($service),
+            'bindingHistory' => $this->getBindingHistory($service),
+            'resolved' => $this->resolve($service),
         ];
     }
 }
