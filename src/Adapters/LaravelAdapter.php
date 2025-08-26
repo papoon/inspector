@@ -234,4 +234,17 @@ class LaravelAdapter implements AdapterInterface
         }
         return $loops;
     }
+
+    public function getTaggedServices(): array
+    {
+        $reflection = new \ReflectionClass($this->container);
+        if ($reflection->hasProperty('tags')) {
+            $property = $reflection->getProperty('tags');
+            $property->setAccessible(true);
+            /** @var array<string, array<string>> $tags */
+            $tags = $property->getValue($this->container);
+            return $tags;
+        }
+        return [];
+    }
 }

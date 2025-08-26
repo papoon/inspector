@@ -49,6 +49,14 @@ class InspectorCheckCommand extends Command
             $output->writeln('<info>No alias loops detected.</info>');
         }
 
+        $tagged = $this->inspector->getTaggedServices();
+        if ($tagged) {
+            $output->writeln('<info>Tagged services:</info>');
+            foreach ($tagged as $tag => $services) {
+                $output->writeln("$tag: " . implode(', ', $services));
+            }
+        }
+
         return Command::SUCCESS;
     }
 }

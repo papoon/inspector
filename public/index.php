@@ -107,7 +107,7 @@ if (isset($_GET['export'])) {
                 echo "- **Class:** `{$detail['class']}`\n";
             }
             if (!empty($detail['interfaces'])) {
-                echo '- **Interfaces:** ' . implode(', ', array_map(fn ($i) => "`$i`", $detail['interfaces'])) . "\n";
+                echo '- **Interfaces:** ' . implode(', ', array_map(fn($i) => "`$i`", $detail['interfaces'])) . "\n";
             }
             if (!empty($detail['constructor_dependencies'])) {
                 echo "- **Constructor dependencies:**\n";
@@ -214,52 +214,52 @@ if (isset($_GET['export'])) {
 
     <?php
     $broken = $inspector->findUnresolvableServices();
-if (!empty($broken)) {
-    echo '<h2>Unresolvable Services</h2><ul>';
-    foreach ($broken as $service) {
-        echo '<li>' . htmlspecialchars($service, ENT_QUOTES, 'UTF-8') . '</li>';
+    if (!empty($broken)) {
+        echo '<h2>Unresolvable Services</h2><ul>';
+        foreach ($broken as $service) {
+            echo '<li>' . htmlspecialchars($service, ENT_QUOTES, 'UTF-8') . '</li>';
+        }
+        echo '</ul>';
     }
-    echo '</ul>';
-}
-?>
+    ?>
 
     <?php
-$brokenDetails = $inspector->findUnresolvableServicesWithDetails();
-if (!empty($brokenDetails)) {
-    echo '<h2>Unresolvable Services (Detailed)</h2><ul>';
-    foreach ($brokenDetails as $service => $info) {
-        // Adapter filter (if you want to filter by current adapter)
-        if ($adapterFilter && $adapterFilter !== $adapterType) {
-            continue;
+    $brokenDetails = $inspector->findUnresolvableServicesWithDetails();
+    if (!empty($brokenDetails)) {
+        echo '<h2>Unresolvable Services (Detailed)</h2><ul>';
+        foreach ($brokenDetails as $service => $info) {
+            // Adapter filter (if you want to filter by current adapter)
+            if ($adapterFilter && $adapterFilter !== $adapterType) {
+                continue;
+            }
+            // Service name filter
+            if ($serviceFilter && mb_stripos($service, $serviceFilter) === false) {
+                continue;
+            }
+            // Error type/message filter
+            $errorText = $info['type'] . ': ' . $info['message'];
+            if ($errorFilter && mb_stripos($errorText, $errorFilter) === false) {
+                continue;
+            }
+            echo '<li><strong>' . htmlspecialchars($service, ENT_QUOTES, 'UTF-8') . '</strong>: ';
+            echo htmlspecialchars($errorText, ENT_QUOTES, 'UTF-8');
+            echo ' <small>(' . htmlspecialchars($info['file'], ENT_QUOTES, 'UTF-8') . ':' . $info['line'] . ')</small>';
+            if (isset($info['exception']) && $info['exception'] instanceof Throwable) {
+                echo '<details><summary>Stack trace</summary><pre style="max-height:300px;overflow:auto;">' .
+                    htmlspecialchars($info['exception']->getTraceAsString(), ENT_QUOTES, 'UTF-8') .
+                    '</pre></details>';
+            }
+            echo '</li>';
         }
-        // Service name filter
-        if ($serviceFilter && mb_stripos($service, $serviceFilter) === false) {
-            continue;
-        }
-        // Error type/message filter
-        $errorText = $info['type'] . ': ' . $info['message'];
-        if ($errorFilter && mb_stripos($errorText, $errorFilter) === false) {
-            continue;
-        }
-        echo '<li><strong>' . htmlspecialchars($service, ENT_QUOTES, 'UTF-8') . '</strong>: ';
-        echo htmlspecialchars($errorText, ENT_QUOTES, 'UTF-8');
-        echo ' <small>(' . htmlspecialchars($info['file'], ENT_QUOTES, 'UTF-8') . ':' . $info['line'] . ')</small>';
-        if (isset($info['exception']) && $info['exception'] instanceof Throwable) {
-            echo '<details><summary>Stack trace</summary><pre style="max-height:300px;overflow:auto;">' .
-                htmlspecialchars($info['exception']->getTraceAsString(), ENT_QUOTES, 'UTF-8') .
-                '</pre></details>';
-        }
-        echo '</li>';
+        echo '</ul>';
     }
-    echo '</ul>';
-}
-?>
+    ?>
 
     <?php
-$errorFilter = $_GET['error_filter'] ?? '';
-$serviceFilter = $_GET['service_filter'] ?? '';
-$adapterFilter = $_GET['adapter_filter'] ?? $adapterType;
-?>
+    $errorFilter = $_GET['error_filter'] ?? '';
+    $serviceFilter = $_GET['service_filter'] ?? '';
+    $adapterFilter = $_GET['adapter_filter'] ?? $adapterType;
+    ?>
     <form method="get" style="margin-bottom: 1em;">
         <input type="text" name="error_filter" value="<?= htmlspecialchars($errorFilter, ENT_QUOTES, 'UTF-8') ?>" placeholder="Filter errors by type or message..." />
         <input type="text" name="service_filter" value="<?= htmlspecialchars($serviceFilter, ENT_QUOTES, 'UTF-8') ?>" placeholder="Filter by service name..." />
@@ -269,35 +269,47 @@ $adapterFilter = $_GET['adapter_filter'] ?? $adapterType;
             <option value="psr" <?= $adapterFilter === 'psr' ? 'selected' : '' ?>>PSR-11</option>
         </select>
         <?php
-    // Preserve other query params
-    foreach ($_GET as $k => $v) {
-        if (!in_array($k, ['error_filter', 'service_filter', 'adapter_filter'])) {
-            echo '<input type="hidden" name="' . htmlspecialchars($k, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($v, ENT_QUOTES, 'UTF-8') . '">';
+        // Preserve other query params
+        foreach ($_GET as $k => $v) {
+            if (!in_array($k, ['error_filter', 'service_filter', 'adapter_filter'])) {
+                echo '<input type="hidden" name="' . htmlspecialchars($k, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($v, ENT_QUOTES, 'UTF-8') . '">';
+            }
         }
-    }
-?>
+        ?>
         <button type="submit">Filter</button>
     </form>
 
     <?php
-$duplicates = $inspector->getDuplicateBindings();
-if (!empty($duplicates)) {
-    echo '<h2>Duplicate Bindings</h2><ul>';
-    foreach ($duplicates as $service) {
-        echo '<li>' . htmlspecialchars($service, ENT_QUOTES, 'UTF-8') . '</li>';
+    $duplicates = $inspector->getDuplicateBindings();
+    if (!empty($duplicates)) {
+        echo '<h2>Duplicate Bindings</h2><ul>';
+        foreach ($duplicates as $service) {
+            echo '<li>' . htmlspecialchars($service, ENT_QUOTES, 'UTF-8') . '</li>';
+        }
+        echo '</ul>';
     }
-    echo '</ul>';
-}
 
-$loops = $inspector->getAliasLoops();
-if (!empty($loops)) {
-    echo '<h2>Alias Loops</h2><ul>';
-    foreach ($loops as $loop) {
-        echo '<li>' . htmlspecialchars(implode(' &rarr; ', $loop), ENT_QUOTES, 'UTF-8') . '</li>';
+    $loops = $inspector->getAliasLoops();
+    if (!empty($loops)) {
+        echo '<h2>Alias Loops</h2><ul>';
+        foreach ($loops as $loop) {
+            echo '<li>' . htmlspecialchars(implode(' &rarr; ', $loop), ENT_QUOTES, 'UTF-8') . '</li>';
+        }
+        echo '</ul>';
     }
-    echo '</ul>';
-}
-?>
+    ?>
+
+    <?php
+    $tagged = $inspector->getTaggedServices();
+    if (!empty($tagged)) {
+        echo '<h2>Tagged Services</h2>';
+        foreach ($tagged as $tag => $services) {
+            echo '<strong>' . htmlspecialchars($tag, ENT_QUOTES, 'UTF-8') . '</strong>: ';
+            echo implode(', ', array_map(fn($s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8'), $services));
+            echo '<br>';
+        }
+    }
+    ?>
 </body>
 
 </html>

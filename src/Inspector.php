@@ -107,4 +107,12 @@ class Inspector
     {
         return $this->adapter->findAliasLoops();
     }
+
+    /**
+     * @return array<string, array<string>>
+     */
+    public function getTaggedServices(): array
+    {
+        return $this->adapter->getTaggedServices();
+    }
 }

@@ -65,4 +65,9 @@ interface AdapterInterface
      * @return array<int, array<string>>
      */
     public function findAliasLoops(): array;
+
+    /**
+     * @return array<string, array<string>>  // ['tag' => [service1, service2, ...]]
+     */
+    public function getTaggedServices(): array;
 }
