@@ -104,6 +104,9 @@ class LaravelAdapter implements AdapterInterface
     {
         $class = $this->getClassForService($service);
 
+        // Detect if the service is shared (singleton)
+        $isShared = $this->container->isShared($service);
+
         $dependencies = [];
         if ($class && class_exists($class)) {
             $reflection = new ReflectionClass($class);
@@ -136,6 +139,7 @@ class LaravelAdapter implements AdapterInterface
             'dependencies' => $this->getDependencies($service),
             'bindingHistory' => $this->getBindingHistory($service),
             'resolved' => $this->resolve($service),
+            'shared' => $isShared,
         ];
     }
 

@@ -26,7 +26,8 @@ class Inspector
      *   constructor_dependencies?: array<array{name: string, type: string|null, isOptional: bool}>,
      *   dependencies: array<string>,
      *   bindingHistory: array<string>,
-     *   resolved: mixed
+     *   resolved: mixed,
+     *   shared: bool|null
      * }
      */
     public function inspectService(string $service): array
@@ -41,6 +42,7 @@ class Inspector
             'dependencies' => [],
             'bindingHistory' => [],
             'resolved' => null,
+            'shared' => null,
         ], $adapterDetails);
     }
 

@@ -59,8 +59,9 @@ class ListServicesCommand extends Command
 
         $output->writeln('Registered services:');
         foreach ($services as $service) {
-            $output->writeln("- $service");
             $details = $this->inspector->inspectService($service);
+            $shared = $details['shared'] === true ? 'singleton' : 'non-shared';
+            $output->writeln("- $service ($shared)");
             if (!empty($details['constructor_dependencies'])) {
                 $output->writeln('  Constructor dependencies:');
                 foreach ($details['constructor_dependencies'] as $dep) {
