@@ -219,4 +219,16 @@ class SymfonyAdapter implements AdapterInterface
         }
         return $loops;
     }
+
+    /** @return array<string, array<string>> Tag => [services] */
+    public function getTaggedServices(): array
+    {
+        $tags = [];
+        foreach ($this->container->getDefinitions() as $id => $definition) {
+            foreach ($definition->getTags() as $tag => $attrs) {
+                $tags[$tag][] = $id;
+            }
+        }
+        return $tags;
+    }
 }

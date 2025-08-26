@@ -10,6 +10,11 @@ use Inspector\Console\InspectorCheckCommand;
 
 class DummyAdapter implements \Inspector\AdapterInterface
 {
+    public function getTaggedServices(): array
+    {
+        return [];
+    }
+
     public function getBindingHistory(string $service): array
     {
         return [];

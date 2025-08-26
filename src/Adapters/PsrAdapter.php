@@ -15,6 +15,13 @@ class PsrAdapter implements AdapterInterface
 {
     protected ContainerInterface $container;
 
+    
+    public function getTaggedServices(): array
+    {
+        // PSR containers do not expose tags, so return empty
+        return [];
+    }
+
     /**
      * @return array<string>
      */
