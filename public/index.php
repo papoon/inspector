@@ -103,15 +103,16 @@ function highlight($text, $filter) {
     </form>
     <ul>
         <?php foreach ($services as $service): ?>
-            <?php
-                $details = $inspector->inspectService($service);
-                $class = $details['class'] ?? '';
-                $interfaces = $details['interfaces'] ?? [];
-            ?>
+            <?php $details = $inspector->inspectService($service); ?>
             <li>
                 <a href="?<?= http_build_query(['filter' => $filter, 'adapter' => $adapterType, 'service' => $service]) ?>">
                     <?= highlight((string)$service, $filter) ?>
                 </a>
+                <?php if (isset($details['shared'])): ?>
+                    <small>
+                        <?= $details['shared'] === true ? 'singleton' : 'non-shared' ?>
+                    </small>
+                <?php endif; ?>
                 <?php if ($class): ?>
                     <small>Class: <?= highlight($class, $filter) ?></small>
                 <?php endif; ?>

@@ -119,6 +119,7 @@ class PsrAdapter implements AdapterInterface
             'dependencies' => $this->getDependencies($service),
             'bindingHistory' => $this->getBindingHistory($service),
             'resolved' => $this->resolve($service),
+            'shared' => null, // or false
         ];
     }
 }

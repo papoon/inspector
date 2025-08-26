@@ -114,10 +114,12 @@ class SymfonyAdapter implements AdapterInterface
     {
         $class = null;
         $constructorDependencies = [];
+        $isShared = false;
 
         if ($this->container->hasDefinition($service)) {
             $definition = $this->container->getDefinition($service);
             $class = $definition->getClass();
+            $isShared = $definition->isShared();
 
             if ($class && class_exists($class)) {
                 $reflection = new ReflectionClass($class);
@@ -151,6 +153,7 @@ class SymfonyAdapter implements AdapterInterface
             'dependencies' => $this->getDependencies($service),
             'bindingHistory' => $this->getBindingHistory($service),
             'resolved' => $this->resolve($service),
+            'shared' => $isShared,
         ];
     }
 }
