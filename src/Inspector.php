@@ -78,23 +78,9 @@ class Inspector
     {
         $broken = [];
         foreach ($this->browseServices() as $service) {
-            $error = null;
-            if (method_exists($this->adapter, 'getResolutionError')) {
-                $error = $this->adapter->getResolutionError($service);
-            } else {
-                try {
-                    $this->adapter->resolve($service);
-                } catch (Throwable $e) {
-                    $error = [
-                        'type' => get_class($e),
-                        'message' => $e->getMessage(),
-                        'code' => $e->getCode(),
-                        'file' => $e->getFile(),
-                        'line' => $e->getLine(),
-                        'exception' => $e,
-                    ];
-                }
-            }
+            
+            $error = $this->adapter->getResolutionError($service);
+            
             if ($error) {
                 $broken[$service] = $error;
             }

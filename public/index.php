@@ -1,9 +1,13 @@
 <?php
+
 declare(strict_types=1);
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use Inspector\Inspector;
+use Inspector\Adapters\SymfonyAdapter;
+use Inspector\Adapters\LaravelAdapter;
+use Inspector\Adapters\PsrAdapter;
 
 // Try to load config from project root first, then fallback to package config
 $configPaths = [
@@ -22,15 +26,12 @@ foreach ($configPaths as $path) {
 $adapterType = $_GET['adapter'] ?? getenv('INSPECTOR_ADAPTER') ?? 'laravel';
 
 if ($adapterType === 'laravel') {
-    use Inspector\Adapters\LaravelAdapter;
     $container = function_exists('app') ? app() : new Illuminate\Container\Container();
     $adapter = new LaravelAdapter($container);
 } elseif ($adapterType === 'symfony') {
-    use Inspector\Adapters\SymfonyAdapter;
     $container = isset($GLOBALS['kernel']) ? $GLOBALS['kernel']->getContainer() : new Symfony\Component\DependencyInjection\ContainerBuilder();
     $adapter = new SymfonyAdapter($container);
 } elseif ($adapterType === 'psr') {
-    use Inspector\Adapters\PsrAdapter;
     $psrConfig = $config['psr'] ?? [];
     $class = $psrConfig['class'] ?? null;
     $args = $psrConfig['args'] ?? [];
@@ -45,22 +46,22 @@ if ($adapterType === 'laravel') {
 $inspector = new Inspector($adapter);
 
 $filter = $_GET['filter'] ?? '';
-$filterLower = strtolower($filter);
+$filterLower = mb_strtolower($filter);
 $services = $inspector->browseServices();
 
 // Enhanced search: by name, class, or interface
 if ($filter !== '') {
-    $services = array_filter($services, function($s) use ($filterLower, $inspector) {
-        if (stripos($s, $filterLower) !== false) {
+    $services = array_filter($services, function ($s) use ($filterLower, $inspector) {
+        if (mb_stripos($s, $filterLower) !== false) {
             return true;
         }
         $details = $inspector->inspectService($s);
-        if (isset($details['class']) && stripos((string)$details['class'], $filterLower) !== false) {
+        if (isset($details['class']) && mb_stripos((string)$details['class'], $filterLower) !== false) {
             return true;
         }
         if (isset($details['interfaces']) && is_array($details['interfaces'])) {
             foreach ($details['interfaces'] as $iface) {
-                if (stripos((string)$iface, $filterLower) !== false) {
+                if (mb_stripos((string)$iface, $filterLower) !== false) {
                     return true;
                 }
             }
@@ -72,21 +73,71 @@ $selectedService = $_GET['service'] ?? null;
 $detail = $selectedService ? $inspector->inspectService($selectedService) : null;
 
 // Helper for highlighting matches
-function highlight($text, $filter) {
-    if (!$filter) return htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+function highlight($text, $filter)
+{
+    if (!$filter) {
+        return htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+    }
     return preg_replace('/(' . preg_quote($filter, '/') . ')/i', '<mark>$1</mark>', htmlspecialchars($text, ENT_QUOTES, 'UTF-8'));
+}
+
+// Handle export before HTML output
+if (isset($_GET['export'])) {
+    $map = [];
+    foreach ($services as $service) {
+        $map[$service] = $inspector->inspectService($service);
+    }
+    $exportType = $_GET['export'];
+    if ($exportType === 'json') {
+        header('Content-Type: application/json');
+        echo json_encode($map, JSON_PRETTY_PRINT);
+        exit;
+    }
+    if ($exportType === 'yaml') {
+        header('Content-Type: text/yaml');
+        echo Symfony\Component\Yaml\Yaml::dump($map, 4, 2);
+        exit;
+    }
+    if ($exportType === 'md') {
+        header('Content-Type: text/markdown');
+        echo "# Service Map\n\n";
+        foreach ($map as $name => $detail) {
+            echo "## `$name`\n";
+            if (!empty($detail['class'])) {
+                echo "- **Class:** `{$detail['class']}`\n";
+            }
+            if (!empty($detail['interfaces'])) {
+                echo '- **Interfaces:** ' . implode(', ', array_map(fn ($i) => "`$i`", $detail['interfaces'])) . "\n";
+            }
+            if (!empty($detail['constructor_dependencies'])) {
+                echo "- **Constructor dependencies:**\n";
+                foreach ($detail['constructor_dependencies'] as $dep) {
+                    echo "  - `{$dep['name']}`: `{$dep['type']}`" . ($dep['isOptional'] ? ' _(optional)_' : '') . "\n";
+                }
+            }
+            echo "\n";
+        }
+        exit;
+    }
 }
 ?>
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="UTF-8">
     <title>Service Container Inspector</title>
     <style>
-        mark { background: #ffe066; }
-        .deps { margin-left: 2em; }
+        mark {
+            background: #ffe066;
+        }
+
+        .deps {
+            margin-left: 2em;
+        }
     </style>
 </head>
+
 <body>
     <h1>Registered Services (<?= htmlspecialchars($adapterType, ENT_QUOTES, 'UTF-8') ?>)</h1>
     <form method="get" style="margin-bottom: 1em;">
@@ -100,6 +151,10 @@ function highlight($text, $filter) {
         <?php if ($selectedService): ?>
             <input type="hidden" name="service" value="<?= htmlspecialchars((string)$selectedService, ENT_QUOTES, 'UTF-8') ?>">
         <?php endif; ?>
+        <!-- Add export buttons to your form -->
+        <button type="submit" name="export" value="json">Export JSON</button>
+        <button type="submit" name="export" value="yaml">Export YAML</button>
+        <button type="submit" name="export" value="md">Export Markdown</button>
     </form>
     <ul>
         <?php foreach ($services as $service): ?>
@@ -159,52 +214,52 @@ function highlight($text, $filter) {
 
     <?php
     $broken = $inspector->findUnresolvableServices();
-    if (!empty($broken)) {
-        echo '<h2>Unresolvable Services</h2><ul>';
-        foreach ($broken as $service) {
-            echo '<li>' . htmlspecialchars($service, ENT_QUOTES, 'UTF-8') . '</li>';
-        }
-        echo '</ul>';
+if (!empty($broken)) {
+    echo '<h2>Unresolvable Services</h2><ul>';
+    foreach ($broken as $service) {
+        echo '<li>' . htmlspecialchars($service, ENT_QUOTES, 'UTF-8') . '</li>';
     }
-    ?>
+    echo '</ul>';
+}
+?>
 
     <?php
-    $brokenDetails = $inspector->findUnresolvableServicesWithDetails();
-    if (!empty($brokenDetails)) {
-        echo '<h2>Unresolvable Services (Detailed)</h2><ul>';
-        foreach ($brokenDetails as $service => $info) {
-            // Adapter filter (if you want to filter by current adapter)
-            if ($adapterFilter && $adapterFilter !== $adapterType) {
-                continue;
-            }
-            // Service name filter
-            if ($serviceFilter && stripos($service, $serviceFilter) === false) {
-                continue;
-            }
-            // Error type/message filter
-            $errorText = $info['type'] . ': ' . $info['message'];
-            if ($errorFilter && stripos($errorText, $errorFilter) === false) {
-                continue;
-            }
-            echo '<li><strong>' . htmlspecialchars($service, ENT_QUOTES, 'UTF-8') . '</strong>: ';
-            echo htmlspecialchars($errorText, ENT_QUOTES, 'UTF-8');
-            echo ' <small>(' . htmlspecialchars($info['file'], ENT_QUOTES, 'UTF-8') . ':' . $info['line'] . ')</small>';
-            if (isset($info['exception']) && $info['exception'] instanceof \Throwable) {
-                echo '<details><summary>Stack trace</summary><pre style="max-height:300px;overflow:auto;">' .
-                    htmlspecialchars($info['exception']->getTraceAsString(), ENT_QUOTES, 'UTF-8') .
-                    '</pre></details>';
-            }
-            echo '</li>';
+$brokenDetails = $inspector->findUnresolvableServicesWithDetails();
+if (!empty($brokenDetails)) {
+    echo '<h2>Unresolvable Services (Detailed)</h2><ul>';
+    foreach ($brokenDetails as $service => $info) {
+        // Adapter filter (if you want to filter by current adapter)
+        if ($adapterFilter && $adapterFilter !== $adapterType) {
+            continue;
         }
-        echo '</ul>';
+        // Service name filter
+        if ($serviceFilter && mb_stripos($service, $serviceFilter) === false) {
+            continue;
+        }
+        // Error type/message filter
+        $errorText = $info['type'] . ': ' . $info['message'];
+        if ($errorFilter && mb_stripos($errorText, $errorFilter) === false) {
+            continue;
+        }
+        echo '<li><strong>' . htmlspecialchars($service, ENT_QUOTES, 'UTF-8') . '</strong>: ';
+        echo htmlspecialchars($errorText, ENT_QUOTES, 'UTF-8');
+        echo ' <small>(' . htmlspecialchars($info['file'], ENT_QUOTES, 'UTF-8') . ':' . $info['line'] . ')</small>';
+        if (isset($info['exception']) && $info['exception'] instanceof Throwable) {
+            echo '<details><summary>Stack trace</summary><pre style="max-height:300px;overflow:auto;">' .
+                htmlspecialchars($info['exception']->getTraceAsString(), ENT_QUOTES, 'UTF-8') .
+                '</pre></details>';
+        }
+        echo '</li>';
     }
-    ?>
+    echo '</ul>';
+}
+?>
 
     <?php
-    $errorFilter = $_GET['error_filter'] ?? '';
-    $serviceFilter = $_GET['service_filter'] ?? '';
-    $adapterFilter = $_GET['adapter_filter'] ?? $adapterType;
-    ?>
+$errorFilter = $_GET['error_filter'] ?? '';
+$serviceFilter = $_GET['service_filter'] ?? '';
+$adapterFilter = $_GET['adapter_filter'] ?? $adapterType;
+?>
     <form method="get" style="margin-bottom: 1em;">
         <input type="text" name="error_filter" value="<?= htmlspecialchars($errorFilter, ENT_QUOTES, 'UTF-8') ?>" placeholder="Filter errors by type or message..." />
         <input type="text" name="service_filter" value="<?= htmlspecialchars($serviceFilter, ENT_QUOTES, 'UTF-8') ?>" placeholder="Filter by service name..." />
@@ -214,14 +269,15 @@ function highlight($text, $filter) {
             <option value="psr" <?= $adapterFilter === 'psr' ? 'selected' : '' ?>>PSR-11</option>
         </select>
         <?php
-        // Preserve other query params
-        foreach ($_GET as $k => $v) {
-            if (!in_array($k, ['error_filter', 'service_filter', 'adapter_filter'])) {
-                echo '<input type="hidden" name="' . htmlspecialchars($k, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($v, ENT_QUOTES, 'UTF-8') . '">';
-            }
+    // Preserve other query params
+    foreach ($_GET as $k => $v) {
+        if (!in_array($k, ['error_filter', 'service_filter', 'adapter_filter'])) {
+            echo '<input type="hidden" name="' . htmlspecialchars($k, ENT_QUOTES, 'UTF-8') . '" value="' . htmlspecialchars($v, ENT_QUOTES, 'UTF-8') . '">';
         }
-        ?>
+    }
+?>
         <button type="submit">Filter</button>
     </form>
 </body>
+
 </html>

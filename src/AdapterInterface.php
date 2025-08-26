@@ -6,6 +6,18 @@ namespace Inspector;
 
 interface AdapterInterface
 {
+    /** @return array<string, string> */
+    public function getAliases(): array;
+
+    /** @return array<string, array{concrete: mixed, shared: bool}> */
+    public function getBindings(): array;
+
+    /** @return array<string> */
+    public function getDependencies(string $service): array;
+
+    /** @return array<string> */
+    public function getBindingHistory(string $service): array;
+
     /** @return array<string> */
     public function getServices(): array;
 
@@ -28,4 +40,17 @@ interface AdapterInterface
      * @return mixed|null
      */
     public function resolve(string $service);
+
+    /**
+     * @param string $service
+     * @return array{
+     *   type: string,
+     *   message: string,
+     *   code: int,
+     *   file: string,
+     *   line: int,
+     *   exception: \Throwable
+     * }|null
+     */
+    public function getResolutionError(string $service): ?array;
 }

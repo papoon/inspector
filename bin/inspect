@@ -22,6 +22,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Inspector\Console\DependencyGraphCommand;
 use Inspector\Console\CircularDependencyCommand;
 use Inspector\Console\ServiceTraceCommand;
+use Inspector\Console\ExportServiceMapCommand;
 
 $adapterType = $argv[1] ?? 'laravel';
 
@@ -81,5 +82,6 @@ registerIfSupported($application, new CheckAutowiringCommand($inspector), $inspe
 registerIfSupported($application, new DependencyGraphCommand($inspector), $inspector, 'getDependencies');
 registerIfSupported($application, new CircularDependencyCommand($inspector), $inspector, 'getCircularDependencies');
 registerIfSupported($application, new ServiceTraceCommand($inspector), $inspector, 'getServiceTrace');
+$application->add(new ExportServiceMapCommand($inspector));
 
 $application->run();
