@@ -23,6 +23,7 @@ use Inspector\Console\DependencyGraphCommand;
 use Inspector\Console\CircularDependencyCommand;
 use Inspector\Console\ServiceTraceCommand;
 use Inspector\Console\ExportServiceMapCommand;
+use Inspector\Console\InspectorCheckCommand;
 
 $adapterType = $argv[1] ?? 'laravel';
 
@@ -83,5 +84,7 @@ registerIfSupported($application, new DependencyGraphCommand($inspector), $inspe
 registerIfSupported($application, new CircularDependencyCommand($inspector), $inspector, 'getCircularDependencies');
 registerIfSupported($application, new ServiceTraceCommand($inspector), $inspector, 'getServiceTrace');
 $application->add(new ExportServiceMapCommand($inspector));
+
+$application->add(new InspectorCheckCommand($inspector));
 
 $application->run();

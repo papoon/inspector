@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Inspector;
 
+use Throwable;
+
 interface AdapterInterface
 {
     /** @return array<string, string> */
@@ -49,8 +51,18 @@ interface AdapterInterface
      *   code: int,
      *   file: string,
      *   line: int,
-     *   exception: \Throwable
+     *   exception: Throwable
      * }|null
      */
     public function getResolutionError(string $service): ?array;
+
+    /**
+     * @return array<string>
+     */
+    public function findDuplicateBindings(): array;
+
+    /**
+     * @return array<int, array<string>>
+     */
+    public function findAliasLoops(): array;
 }
